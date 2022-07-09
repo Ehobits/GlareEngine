@@ -138,7 +138,8 @@ void SimpleGeoInstance::BuildMaterials()
         XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
         XMFLOAT3(0.1f, 0.1f, 0.1f),
         MatTransform,
-        MaterialType::NormalPBRMat);
+        MaterialType::NormalPBRMat,
+        pTextureManage->GetNumFrameResources());
     mPBRTextureName.push_back(L"PBRwhite_spruce_tree_bark");
 
 	//PBRharshbricks Material
@@ -148,7 +149,8 @@ void SimpleGeoInstance::BuildMaterials()
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
 		XMFLOAT3(0.1f, 0.1f, 0.1f),
 		MatTransform,
-        MaterialType::NormalPBRMat);
+        MaterialType::NormalPBRMat,
+        pTextureManage->GetNumFrameResources());
     mPBRTextureName.push_back(L"PBRharshbricks");
 
 	//PBRrocky_shoreline1 Material
@@ -158,7 +160,8 @@ void SimpleGeoInstance::BuildMaterials()
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
 		XMFLOAT3(0.1f, 0.1f, 0.1f),
 		MatTransform,
-		MaterialType::NormalPBRMat);
+		MaterialType::NormalPBRMat,
+        pTextureManage->GetNumFrameResources());
     mPBRTextureName.push_back(L"PBRrocky_shoreline1");
 
 	//PBRstylized_grass1 Material
@@ -168,7 +171,8 @@ void SimpleGeoInstance::BuildMaterials()
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
 		XMFLOAT3(0.1f, 0.1f, 0.1f),
 		MatTransform,
-		MaterialType::NormalPBRMat);
+		MaterialType::NormalPBRMat,
+        pTextureManage->GetNumFrameResources());
     mPBRTextureName.push_back(L"PBRstylized_grass1");
 
 	//PBRIndustrial_narrow_brick Material
@@ -178,7 +182,8 @@ void SimpleGeoInstance::BuildMaterials()
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
 		XMFLOAT3(0.1f, 0.1f, 0.1f),
 		MatTransform,
-		MaterialType::NormalPBRMat);
+		MaterialType::NormalPBRMat,
+        pTextureManage->GetNumFrameResources());
     mPBRTextureName.push_back(L"PBRIndustrial_narrow_brick");
 
 	//PBRBrass Material
@@ -189,7 +194,8 @@ void SimpleGeoInstance::BuildMaterials()
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
 		XMFLOAT3(0.1f, 0.1f, 0.1f),
 		MatTransform,
-		MaterialType::NormalPBRMat);
+		MaterialType::NormalPBRMat,
+        pTextureManage->GetNumFrameResources());
     mPBRTextureName.push_back(L"PBRBrass");
 #pragma endregion
 

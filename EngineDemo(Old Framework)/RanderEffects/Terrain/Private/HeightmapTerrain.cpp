@@ -131,7 +131,8 @@ void HeightmapTerrain::BuildMaterials()
 			XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
 			XMFLOAT3(0.1f, 0.1f, 0.1f),
 			MatTransform,
-			MaterialType::HeightMapTerrainPBRMat);
+			MaterialType::HeightMapTerrainPBRMat,
+			pTextureManage->GetNumFrameResources());
 	}
 
 	mGrass->BuildMaterials();

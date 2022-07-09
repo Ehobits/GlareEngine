@@ -49,7 +49,6 @@ public:
 	bool IsWireframe()const { return mWireframe; }
 	bool IsMSAA()const { return mMSAA; }
 
-	static bool mWindowMaxSize;
 private:
 	void InitGUI();
 	void CreateUIDescriptorHeap(ID3D12GraphicsCommandList* d3dCommandList);

@@ -87,7 +87,8 @@ void Grass::BuildMaterials()
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
 		XMFLOAT3(0.1f, 0.1f, 0.1f),
 		MatTransform,
-		MaterialType::NormalPBRMat);
+		MaterialType::NormalPBRMat,
+		mTextureManage->GetNumFrameResources());
 }
 
 void Grass::FillSRVDescriptorHeap(int* SRVIndex, CD3DX12_CPU_DESCRIPTOR_HANDLE* hDescriptor)

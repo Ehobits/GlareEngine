@@ -1,6 +1,5 @@
 #pragma once
 
-#include "resource.h"
 #include "BaseApp.h"
 #include "MathHelper.h"
 #include "UploadBuffer.h"
@@ -34,7 +33,8 @@
 #include "HeightmapTerrain.h"
 //#include "OzzAnimePlayBack.h"
 #include "EngineLog.h"
-using Microsoft::WRL::ComPtr;
+
+using namespace Microsoft::WRL;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
 
@@ -59,7 +59,7 @@ struct RenderItem
 	// 指示对象数据已更改的脏标志，我们需要更新常量缓冲区。 
 	//因为我们为每个FrameResource提供了一个对象缓冲区，所以我们必须将更新应用于每个FrameResource。 
 	//因此，当我们修改对象数据时，我们应该设置NumFramesDirty = gNumFrameResources，以便每个帧资源都得到更新。
-	int NumFramesDirty = gNumFrame;
+	int NumFramesDirty = 0;
 
 	//索引到此渲染项目对应于ObjectCB的GPU常量缓冲区。
 	int ObjCBIndex = -1;
@@ -191,6 +191,8 @@ private:
 
 private:
 
+	// 帧资源
+	const int gNumFrameResources = 3;
 	std::vector<std::unique_ptr<FrameResource>> mFrameResources;
 	FrameResource* mCurrFrameResource = nullptr;
 	int mCurrFrameResourceIndex = 0;
@@ -242,6 +244,9 @@ private:
 
 	POINT mLastMousePos;
 
+	//UI
+	EngineGUI mEngineUI;
+
 	//相机
 	Camera mCamera;
 	//TEXTURE MANAGER
@@ -252,8 +257,6 @@ private:
 	std::unique_ptr<Sky> mSky;
 
 	int mSkyMapIndex = 0;
-	//UI
-	std::unique_ptr<EngineGUI> mEngineUI;
 
 	//Instance Culling
 	bool mFrustumCullingEnabled = true;

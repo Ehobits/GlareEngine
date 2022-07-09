@@ -270,14 +270,14 @@ void App::UpdateSceneState(float DeltaTime)
 
 void App::UpdateWindow(float DeltaTime)
 {
-	if (EngineGUI::mWindowMaxSize && !mMaximized)
-	{
-		SendMessage(g_hWnd, WM_SYSCOMMAND, SC_MAXIMIZE, NULL);
-	}
-	if (!EngineGUI::mWindowMaxSize && mMaximized)
-	{
-		SendMessage(g_hWnd, WM_SYSCOMMAND, SC_RESTORE, NULL);
-	}
+	//if (!mMaximized)
+	//{
+	//	SendMessage(g_hWnd, WM_SYSCOMMAND, SC_MAXIMIZE, NULL);
+	//}
+	//if (mMaximized)
+	//{
+	//	SendMessage(g_hWnd, WM_SYSCOMMAND, SC_RESTORE, NULL);
+	//}
 }
 
 void App::UpdateCamera(float DeltaTime)

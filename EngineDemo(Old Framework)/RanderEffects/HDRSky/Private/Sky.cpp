@@ -77,7 +77,8 @@ void Sky::BuildMaterials()
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
 		XMFLOAT3(0.1f, 0.1f, 0.1f),
 		MathHelper::Identity4x4(),
-		MaterialType::SkyMat);
+		MaterialType::SkyMat,
+		pTextureManage->GetNumFrameResources());
 }
 
 void Sky::FillSRVDescriptorHeap(int* SRVIndex, CD3DX12_CPU_DESCRIPTOR_HANDLE* hDescriptor)

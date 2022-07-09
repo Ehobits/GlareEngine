@@ -1,6 +1,8 @@
 ﻿#include "EngineDemo.h"
 #include "Grass.h"
 #include "ModelMesh.h"
+#include "resource.h"
+
 //lib
 #pragma comment(lib, "comsuppw.lib")
 #pragma comment(lib, "d3dcompiler.lib")
@@ -10,8 +12,6 @@
 using namespace GlareEngine;
 
 #define ShadowMapSize 4096
-
-const int gNumFrame = 3;
 
 bool GameApp::RedrawShadowMap = true;
 
@@ -25,19 +25,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
-	try
-	{
-		GameApp theApp(hInstance);
-		if (!theApp.Initialize())
-			return 0;
-
-		return theApp.Run();
-	}
-	catch (DxException& e)
-	{
-		MessageBox(nullptr, e.ToString().c_str(), L"HR Failed", MB_OK);
+	GameApp theApp(hInstance);
+	if (!theApp.Initialize())
 		return 0;
-	}
+
+	return theApp.Run();
 }
 #endif
 
@@ -78,9 +70,7 @@ bool GameApp::Initialize()
 	// 获取此堆类型中描述符的增量大小。 这是特定于硬件的，因此我们必须查询此信息。
 	mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	//texture manage
-	mTextureManage = std::make_unique<TextureManage>(md3dDevice.Get(), mCommandList.Get(), mCbvSrvDescriptorSize);
-	//init UI
-	mEngineUI = make_unique<EngineGUI>(mhMainWnd, md3dDevice.Get(),mTextureManage.get(), mCommandList.Get());
+	mTextureManage = std::make_unique<TextureManage>(md3dDevice.Get(), mCommandList.Get(), mCbvSrvDescriptorSize, gNumFrameResources);
 	//pso init
 	mPSOs = std::make_unique<PSO>();
 	//wave :not use
@@ -115,9 +105,11 @@ bool GameApp::Initialize()
 		BuildPSOs();
 	}
 
+	//init UI
+	mEngineUI.InitGUI(mhMainWnd, md3dDevice.Get(), mCommandList.Get(), mGUISrvDescriptorHeap.Get(), gNumFrameResources);
 
 	//Wire Frame State
-	mOldWireFrameState = mEngineUI->IsWireframe();
+	mOldWireFrameState = mEngineUI.IsWireframe();
 
 	// 执行初始化命令。
 	ThrowIfFailed(mCommandList->Close());
@@ -147,16 +139,7 @@ void GameApp::OnResize()
 
 void GameApp::Update(const GameTimer& gt)
 {
-	if (EngineGUI::mWindowMaxSize && !mMaximized)
-	{
-		SendMessage(mhMainWnd, WM_SYSCOMMAND, SC_MAXIMIZE, NULL);
-	}
-	if (!EngineGUI::mWindowMaxSize && mMaximized)
-	{
-		SendMessage(mhMainWnd, WM_SYSCOMMAND, SC_RESTORE, NULL);
-	}
-
-	mNewWireFrameState = mEngineUI->IsWireframe();
+	mNewWireFrameState = mEngineUI.IsWireframe();
 	if (mNewWireFrameState != mOldWireFrameState)
 	{
 		//We need Rebuild PSO.
@@ -168,7 +151,7 @@ void GameApp::Update(const GameTimer& gt)
 	//UpdateCamera(gt);
 
 	// 循环遍历循环框架资源数组。
-	mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % gNumFrame;
+	mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % gNumFrameResources;
 	mCurrFrameResource = mFrameResources[mCurrFrameResourceIndex].get();
 
 	// GPU是否已完成对当前帧资源的命令的处理？
@@ -205,15 +188,18 @@ void GameApp::Draw(const GameTimer& gt)
 	//重用命令列表将重用内存。
 	ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), mPSOs.get()->GetPSO(PSOName::Opaque).Get()));
 
+	mCommandList->RSSetViewports(1, &mScreenViewport);
+	mCommandList->RSSetScissorRects(1, &mScissorRect);
+
+	//设置SRV描述符堆
 	{
-		//SET SRV Descriptor heap
 		ID3D12DescriptorHeap* descriptorHeaps[] = { mSrvDescriptorHeap.Get() };
 		mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 		//Set Graphics Root Signature
 		mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 	}
 
-	//root descriptors
+	// 根描述符
 	{
 		// Bind all the materials used in this scene.  For structured buffers, we can bypass the heap and 
 		// set as a root descriptor.
@@ -235,7 +221,7 @@ void GameApp::Draw(const GameTimer& gt)
 	}
 
 	//Draw shadow
-	if (mEngineUI->IsShowShadow())
+	if (mEngineUI.IsShowShadow())
 	{
 		if (GameApp::RedrawShadowMap)
 		{
@@ -287,6 +273,8 @@ void GameApp::Draw(const GameTimer& gt)
 		// Specify the buffers we are going to render to.
 		mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
 	}
+
+
 	//Draw Main
 	{
 		//Set Graphics Root CBV in slot 2
@@ -295,7 +283,7 @@ void GameApp::Draw(const GameTimer& gt)
 
 
 		//Draw Render Items (Opaque)
-		if (mEngineUI->IsShowLand())
+		if (mEngineUI.IsShowLand())
 		{
 			mCommandList->SetPipelineState(mPSOs.get()->GetPSO(PSOName::Opaque).Get());
 			PIXBeginEvent(mCommandList.Get(), 0, "Draw Main::RenderLayer::Opaque");
@@ -303,7 +291,7 @@ void GameApp::Draw(const GameTimer& gt)
 			PIXEndEvent(mCommandList.Get());
 		}
 		//Draw Instanse 
-		if (mEngineUI->IsShowModel())
+		if (mEngineUI.IsShowModel())
 		{
 			mCommandList->SetPipelineState(mPSOs.get()->GetPSO(PSOName::SkinAnime).Get());
 			PIXBeginEvent(mCommandList.Get(), 0, "Draw Main::RenderLayer::InstanceSimpleItems");
@@ -311,7 +299,7 @@ void GameApp::Draw(const GameTimer& gt)
 			PIXEndEvent(mCommandList.Get());
 		}
 		//Draw Sky box
-		if (mEngineUI->IsShowSky())
+		if (mEngineUI.IsShowSky())
 		{
 			mCommandList->SetPipelineState(mPSOs.get()->GetPSO(PSOName::Sky).Get());
 			PIXBeginEvent(mCommandList.Get(), 0, "Draw Main::RenderLayer::Sky");
@@ -321,20 +309,20 @@ void GameApp::Draw(const GameTimer& gt)
 	}
 
 	//Draw Height Map Terrain
-	if (mEngineUI->IsShowTerrain())
+	if (mEngineUI.IsShowTerrain())
 	{
 		//Draw Height Map Terrain
 		DrawHeightMapTerrain(gt);
 	}
 
 	//Draw Grass
-	if (mEngineUI->IsShowGrass())
+	if (mEngineUI.IsShowGrass())
 	{
 		DrawGrass(gt);
 	}
 
 	//Draw Shock Wave Water
-	if (mEngineUI->IsShowWater())
+	if (mEngineUI.IsShowWater())
 	{
 		//Draw Shock Wave Water
 		PIXBeginEvent(mCommandList.Get(), 0, "Draw Shock Wave Water");
@@ -342,12 +330,22 @@ void GameApp::Draw(const GameTimer& gt)
 		PIXEndEvent(mCommandList.Get());
 	}
 
+	//设置UI SRV描述符堆
+	{
+		ID3D12DescriptorHeap* descriptorHeaps[] = { mGUISrvDescriptorHeap.Get() };
+		mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+		// Set Graphics Root Signature
+		mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+	}
 
-
+	//Draw UI
+	PIXBeginEvent(mCommandList.Get(), 0, "Draw UI");
+	mEngineUI.Draw(mCommandList.Get(), IsZoomed(mhMainWnd));
+	PIXEndEvent(mCommandList.Get());
 
 	if (m4xMsaaState)
 	{
-		D3D12_RESOURCE_BARRIER barriers[2] =
+		D3D12_RESOURCE_BARRIER Barriers[2] =
 		{
 			CD3DX12_RESOURCE_BARRIER::Transition(
 				mMSAARenderTargetBuffer.Get(),
@@ -355,22 +353,25 @@ void GameApp::Draw(const GameTimer& gt)
 				D3D12_RESOURCE_STATE_RESOLVE_SOURCE),
 			CD3DX12_RESOURCE_BARRIER::Transition(
 				CurrentBackBuffer(),
-				D3D12_RESOURCE_STATE_PRESENT,
-				D3D12_RESOURCE_STATE_RESOLVE_DEST)
+				D3D12_RESOURCE_STATE_RENDER_TARGET,
+				D3D12_RESOURCE_STATE_RESOLVE_SOURCE)
 		};
 
-		//Draw UI
-		PIXBeginEvent(mCommandList.Get(), 0, "Draw UI");
-		mEngineUI->Draw(mCommandList.Get());
-		PIXEndEvent(mCommandList.Get());
-
-		mCommandList->ResourceBarrier(2, barriers);
+		mCommandList->ResourceBarrier(2, Barriers);
 		mCommandList->ResolveSubresource(CurrentBackBuffer(), 0, mMSAARenderTargetBuffer.Get(), 0, mBackBufferFormat);
 	}
+	else
+	{
+		D3D12_RESOURCE_BARRIER Barriers = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_RESOLVE_SOURCE);
 
-	// Indicate a state transition on the resource usage.
-	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
-		D3D12_RESOURCE_STATE_RESOLVE_DEST, D3D12_RESOURCE_STATE_PRESENT));
+		mCommandList->ResourceBarrier(1, &Barriers);
+	}
+
+	// 指示资源使用的状态转换。
+	D3D12_RESOURCE_BARRIER Barriers = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
+		D3D12_RESOURCE_STATE_RESOLVE_SOURCE, D3D12_RESOURCE_STATE_PRESENT);
+	mCommandList->ResourceBarrier(1, &Barriers);
 
 	// Done recording commands.
 	ThrowIfFailed(mCommandList->Close());
@@ -409,6 +410,7 @@ void GameApp::CreateDescriptorHeaps()
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
+	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mGUISrvDescriptorHeap)));
 
 	// Fill out the heap with actual descriptors.
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
@@ -469,61 +471,38 @@ void GameApp::OnMouseUp(WPARAM btnState, int x, int y)
 
 void GameApp::OnMouseMove(WPARAM btnState, int x, int y)
 {
-
-	//if (x <= 400 || x >= 1910 || y <= 400 || y >= 1070)
-	//{
-	//	//SetCursorPos(1920 / 2, 1080 / 2);
-	//	mLastMousePos.x = 1920 / 2;
-	//	mLastMousePos.y = 1080 / 2;
-	//}
-	//else {
-	//	float dx = XMConvertToRadians(0.25f * static_cast<float>(x - mLastMousePos.x));
-	//	float dy = XMConvertToRadians(0.25f * static_cast<float>(y - mLastMousePos.y));
-	//	mCamera.Pitch(dy);
-	//	mCamera.RotateY(dx);
-	//	mLastMousePos.x = x;
-	//	mLastMousePos.y = y;
-	//	
-	//}
-
+	if (mEngineUI.OnMouseMove())
+	{
+		return;
+	}
 
 	if ((btnState & MK_LBUTTON) != 0)
 	{
-		if (x >= mClientRect.left && y >= mClientRect.top
-			&& y <= (mClientRect.top + (mClientRect.bottom - mClientRect.top))
-			&& x <= (mClientRect.left + (mClientRect.right - mClientRect.left)))
-		{
-			float dx = XMConvertToRadians(0.25f * static_cast<float>(x - mLastMousePos.x));
-			float dy = XMConvertToRadians(0.25f * static_cast<float>(y - mLastMousePos.y));
-			mCamera.Pitch(dy);
-			mCamera.RotateY(dx);
-			mLastMousePos.x = x;
-			mLastMousePos.y = y;
-		}
+		float dx = XMConvertToRadians(0.25f * static_cast<float>(x - mLastMousePos.x));
+		float dy = XMConvertToRadians(0.25f * static_cast<float>(y - mLastMousePos.y));
+		mCamera.Pitch(dy);
+		mCamera.RotateY(dx);
+		mLastMousePos.x = x;
+		mLastMousePos.y = y;	
 	}
-
 }
 
 void GameApp::OnKeyboardInput(const GameTimer& gt)
 {
-	if (mLastMousePos.x >= mClientRect.left && mLastMousePos.y >= mClientRect.top
-		&& mLastMousePos.y <= (mClientRect.top + (mClientRect.bottom - mClientRect.top))
-		&& mLastMousePos.x <= (mClientRect.left + (mClientRect.right - mClientRect.left)))
-	{
-		float CameraModeSpeed = mEngineUI->GetCameraModeSpeed();
-		float DeltaTime = gt.DeltaTime();
-		if (GetAsyncKeyState('W') & 0x8000)
-			mCamera.Walk(CameraModeSpeed * DeltaTime);
+	float CameraModeSpeed = mEngineUI.GetCameraModeSpeed();
+	float DeltaTime = gt.DeltaTime();
+	if (GetAsyncKeyState('W') & 0x8000)
+		mCamera.Walk(CameraModeSpeed * DeltaTime);
 
-		if (GetAsyncKeyState('S') & 0x8000)
-			mCamera.Walk(-CameraModeSpeed * DeltaTime);
+	if (GetAsyncKeyState('S') & 0x8000)
+		mCamera.Walk(-CameraModeSpeed * DeltaTime);
 
-		if (GetAsyncKeyState('A') & 0x8000)
-			mCamera.Strafe(-CameraModeSpeed * DeltaTime);
+	if (GetAsyncKeyState('A') & 0x8000)
+		mCamera.Strafe(-CameraModeSpeed * DeltaTime);
 
-		if (GetAsyncKeyState('D') & 0x8000)
-			mCamera.Strafe(CameraModeSpeed * DeltaTime);
-	}
+	if (GetAsyncKeyState('D') & 0x8000)
+		mCamera.Strafe(CameraModeSpeed * DeltaTime);
+
 	XMFLOAT3 camPos = mCamera.GetPosition3f();
 	static float width = 2048.0f;
 	if (camPos.x<-width || camPos.x >width ||
@@ -541,7 +520,7 @@ void GameApp::OnKeyboardInput(const GameTimer& gt)
 	}
 	mCamera.UpdateViewMatrix();
 
-	mEngineUI->SetCameraPosition(camPos);
+	mEngineUI.SetCameraPosition(camPos);
 }
 
 
@@ -732,11 +711,11 @@ void GameApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.WaterReflectionMapIndex = mWaterReflectionMapIndex;
 	mMainPassCB.WaterRefractionMapIndex = mWaterRefractionMapIndex;
 	//Fog
-	mMainPassCB.FogStart = mEngineUI->GetFogStart();
-	mMainPassCB.FogRange = mEngineUI->GetFogRange();
+	mMainPassCB.FogStart = mEngineUI.GetFogStart();
+	mMainPassCB.FogRange = mEngineUI.GetFogRange();
 	mMainPassCB.FogColor = { 1.0f, 1.0f, 1.0f,1.0f };
-	mMainPassCB.FogEnabled = (int)mEngineUI->IsShowFog();
-	mMainPassCB.ShadowEnabled = (int)mEngineUI->IsShowShadow();
+	mMainPassCB.FogEnabled = (int)mEngineUI.IsShowFog();
+	mMainPassCB.ShadowEnabled = (int)mEngineUI.IsShowShadow();
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);//index 0 main pass
@@ -1425,7 +1404,7 @@ void GameApp::BuildPSOs()
 
 void GameApp::BuildFrameResources()
 {
-	for (int i = 0; i < gNumFrame; ++i)
+	for (int i = 0; i < gNumFrameResources; ++i)
 	{
 		mFrameResources.push_back(std::make_unique<FrameResource>(md3dDevice.Get(),
 			2, (UINT)mModelLoder->GetModelMesh("Blue_Tree_02a").size(), 1, (UINT)mAllRitems.size(), (UINT)Materials::GetMaterialSize(), mWaves->VertexCount()));
@@ -1460,6 +1439,7 @@ void GameApp::BuildRenderItems()
 		LandRitem.StartIndexLocation.push_back(LandRitem.Geo[0]->DrawArgs["grid"].StartIndexLocation);
 		LandRitem.BaseVertexLocation.push_back(LandRitem.Geo[0]->DrawArgs["grid"].BaseVertexLocation);
 		LandRitem.InstanceCount = 1;
+		LandRitem.NumFramesDirty = gNumFrameResources;
 
 #pragma region Reflection
 		RenderItem ReflectionLandRitem = LandRitem;
@@ -1491,6 +1471,7 @@ void GameApp::BuildRenderItems()
 		TerrainRitem.StartIndexLocation.push_back(TerrainRitem.Geo[0]->DrawArgs["HeightMapTerrain"].StartIndexLocation);
 		TerrainRitem.BaseVertexLocation.push_back(TerrainRitem.Geo[0]->DrawArgs["HeightMapTerrain"].BaseVertexLocation);
 		TerrainRitem.InstanceCount = 1;
+		TerrainRitem.NumFramesDirty = gNumFrameResources;
 
 #pragma region Reflection
 		RenderItem ReflectionTerrainRitem = TerrainRitem;
@@ -1522,6 +1503,7 @@ void GameApp::BuildRenderItems()
 		GrassRitem.StartIndexLocation.push_back(GrassRitem.Geo[0]->DrawArgs["Grass"].StartIndexLocation);
 		GrassRitem.BaseVertexLocation.push_back(GrassRitem.Geo[0]->DrawArgs["Grass"].BaseVertexLocation);
 		GrassRitem.InstanceCount = 1;
+		GrassRitem.NumFramesDirty = gNumFrameResources;
 
 #pragma region Reflection
 		RenderItem ReflectionGrassRitem = GrassRitem;
@@ -1553,6 +1535,8 @@ void GameApp::BuildRenderItems()
 		ShockWaveWaterRitem.StartIndexLocation.push_back(ShockWaveWaterRitem.Geo[0]->DrawArgs["grid"].StartIndexLocation);
 		ShockWaveWaterRitem.BaseVertexLocation.push_back(ShockWaveWaterRitem.Geo[0]->DrawArgs["grid"].BaseVertexLocation);
 		ShockWaveWaterRitem.InstanceCount = 1;
+		ShockWaveWaterRitem.NumFramesDirty = gNumFrameResources;
+		
 		auto ShockWaveWater = std::make_unique<RenderItem>(ShockWaveWaterRitem);
 		mRitemLayer[(int)RenderLayer::ShockWaveWater].push_back(ShockWaveWater.get());
 		mAllRitems.push_back(std::move(ShockWaveWater));
@@ -1572,6 +1556,7 @@ void GameApp::BuildRenderItems()
 		skyRitem.StartIndexLocation.push_back(skyRitem.Geo[0]->DrawArgs["Sphere"].StartIndexLocation);
 		skyRitem.BaseVertexLocation.push_back(skyRitem.Geo[0]->DrawArgs["Sphere"].BaseVertexLocation);
 		skyRitem.InstanceCount = 1;
+		skyRitem.NumFramesDirty = gNumFrameResources;
 
 #pragma region Reflection
 		RenderItem reflectionWaterskyRitem = skyRitem;
@@ -1817,7 +1802,7 @@ void GameApp::DrawWaterReflectionMap(const GameTimer& gt)
 	}
 
 	//Draw Render Items (Opaque)
-	if (mEngineUI->IsShowLand())
+	if (mEngineUI.IsShowLand())
 	{
 		mCommandList->SetPipelineState(mPSOs.get()->GetPSO(PSOName::Opaque).Get());
 		PIXBeginEvent(mCommandList.Get(), 0, "Draw Water::RenderLayer::Opaque");
@@ -1825,7 +1810,7 @@ void GameApp::DrawWaterReflectionMap(const GameTimer& gt)
 		PIXEndEvent(mCommandList.Get());
 	}
 	//Draw Instanse 
-	if (mEngineUI->IsShowModel())
+	if (mEngineUI.IsShowModel())
 	{
 		mCommandList->SetPipelineState(mPSOs.get()->GetPSO(PSOName::SkinAnime).Get());
 		PIXBeginEvent(mCommandList.Get(), 0, "Draw Water::RenderLayer::InstanceSimpleItems");
@@ -1833,19 +1818,19 @@ void GameApp::DrawWaterReflectionMap(const GameTimer& gt)
 		PIXEndEvent(mCommandList.Get());
 	}
 	//Draw Height Map Terrain
-	if (mEngineUI->IsShowTerrain())
+	if (mEngineUI.IsShowTerrain())
 	{
 		DrawHeightMapTerrain(gt, true);
 	}
 
 	//Draw Grass
-	if (mEngineUI->IsShowGrass())
+	if (mEngineUI.IsShowGrass())
 	{
 		DrawGrass(gt, true);
 	}
 
 	//Draw Sky box
-	if (mEngineUI->IsShowSky())
+	if (mEngineUI.IsShowSky())
 	{
 		mCommandList->SetPipelineState(mPSOs.get()->GetPSO(PSOName::Sky).Get());
 		PIXBeginEvent(mCommandList.Get(), 0, "Draw Water::RenderLayer::Sky");
@@ -2125,13 +2110,13 @@ void GameApp::UpdateTerrainPassCB(const GameTimer& gt)
 	mTerrainConstant.gBlendMapIndex = mBlendMapIndex;
 	mTerrainConstant.gHeightMapIndex = mHeightMapIndex;
 	mTerrainConstant.gRGBNoiseMapIndex = mRGBNoiseMapIndex;
-	mTerrainConstant.gMinWind = mEngineUI->GetGrassMinWind();
-	mTerrainConstant.gMaxWind = mEngineUI->GetGrassMaxWind();
-	mTerrainConstant.gGrassColor = mEngineUI->GetGrassColor();
-	mTerrainConstant.gPerGrassHeight = mEngineUI->GetPerGrassHeight();
-	mTerrainConstant.gPerGrassWidth = mEngineUI->GetPerGrassWidth();
-	mTerrainConstant.isGrassRandom = mEngineUI->IsGrassRandom();
-	mTerrainConstant.gWaterTransparent = mEngineUI->GetWaterTransparent();
+	mTerrainConstant.gMinWind = mEngineUI.GetGrassMinWind();
+	mTerrainConstant.gMaxWind = mEngineUI.GetGrassMaxWind();
+	mTerrainConstant.gGrassColor = mEngineUI.GetGrassColor();
+	mTerrainConstant.gPerGrassHeight = mEngineUI.GetPerGrassHeight();
+	mTerrainConstant.gPerGrassWidth = mEngineUI.GetPerGrassWidth();
+	mTerrainConstant.isGrassRandom = mEngineUI.IsGrassRandom();
+	mTerrainConstant.gWaterTransparent = mEngineUI.GetWaterTransparent();
 
 	auto currPassCB = mCurrFrameResource->TerrainCB.get();
 	currPassCB->CopyData(0, mTerrainConstant);

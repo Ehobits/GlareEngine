@@ -1,8 +1,9 @@
 #include "TextureManage.h"
 #include "Material.h"
-TextureManage::TextureManage(ID3D12Device* d3dDevice, ID3D12GraphicsCommandList* CommandList, UINT CbvSrvDescriptorSize)
+TextureManage::TextureManage(ID3D12Device* d3dDevice, ID3D12GraphicsCommandList* CommandList, UINT CbvSrvDescriptorSize, int NumFrameResources)
 :md3dDevice(d3dDevice),
 mCommandList(CommandList),
+gNumFrameResources(NumFrameResources),
 mCbvSrvDescriptorSize(CbvSrvDescriptorSize)
 {
 }

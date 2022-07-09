@@ -7,7 +7,6 @@
 #include "EngineUtility.h"
 
 class TextureManage;
-#define MainMenuBarHeight  27.0f
 #define CLIENT_FROMLEFT 0.166667f
 #define CLIENT_HEIGHT 0.75f
 
@@ -15,10 +14,13 @@ extern bool gFullSreenMode;
 class EngineGUI
 {
 public:
-	EngineGUI(HWND GameWnd, ID3D12Device* d3dDevice, TextureManage* mTextureManager,ID3D12GraphicsCommandList* d3dCommandList = nullptr);
+	EngineGUI();
 	~EngineGUI();
 public:
-	void Draw(ID3D12GraphicsCommandList* d3dCommandList);
+	void InitGUI(HWND EdithWnd, ID3D12Device* d3dDevice, ID3D12GraphicsCommandList* d3dCommandList, ID3D12DescriptorHeap* SrvDescriptorHeap, const int gNumFrameResources = 3);
+	bool OnMouseMove();
+
+	void Draw(ID3D12GraphicsCommandList* d3dCommandList, bool mWindowMaxSize);
 	void ShutDown();
 
 	bool IsShowShadow()const { return show_shadow; }
@@ -46,9 +48,7 @@ public:
 
 	bool IsWireframe()const { return mWireframe; }
 
-	static bool mWindowMaxSize;
 private:
-	void InitGUI(HWND GameWnd);
 	void CreateUIDescriptorHeap(ID3D12GraphicsCommandList* d3dCommandList);
 	void SetWindowStyles();
 	void DrawEngineIcon(float IconSize, float IconWindowHigh);
@@ -68,7 +68,7 @@ private:
 	bool show_sky = true;
 	bool show_HeightMapTerrain = true;
 	bool show_Grass = false;
-	float CameraMoveSpeed = 200.0f;
+	float CameraMoveSpeed = 100.0f;
 
 	bool  FogEnabled = false;
 	float FogStart = 300.0f;
@@ -87,19 +87,19 @@ private:
 	float mGrassColor[3] = { 0.39f,0.196f,0.0f };
 	XMFLOAT3 mCameraPosition = { 0.0f,0.0f,0.0f };
 
+	std::wstring FPSText = L"";
 	vector<wstring> mLogs;
 	char  FilterString[256] = {};
 	char InputBuffer[256] = {};
 	int mLogSize = 0;
 private:
 	ID3D12Device* md3dDevice;
-	TextureManage* mTextureManager;
+	std::unique_ptr<TextureManage>  mTextureManager;
 	ID3D12DescriptorHeap* mGUISrvDescriptorHeap = nullptr;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE mEngineIconTexDescriptor;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE mEngineMaxTexDescriptor;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE mEngineMinTexDescriptor;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE mEngineCloseTexDescriptor;
-	ImGuiContext *g=nullptr;
 	bool isUIShow = true;
 };
 

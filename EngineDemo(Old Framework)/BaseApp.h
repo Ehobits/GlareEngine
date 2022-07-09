@@ -13,7 +13,8 @@
 #pragma comment(lib,"d3dcompiler.lib")
 #pragma comment(lib, "D3D12.lib")
 #pragma comment(lib, "dxgi.lib")
-using Microsoft::WRL::ComPtr;
+
+using namespace Microsoft::WRL;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
 using namespace std;
@@ -86,7 +87,7 @@ protected:
     bool      mFullscreenState = false;// fullscreen enabled
 
 	// Set true to use 4X MSAA (?.1.8).  The default is false.
-    bool      m4xMsaaState =true;    // 4X MSAA enabled
+    bool      m4xMsaaState = false;    // 4X MSAA enabled
     UINT      m4xMsaaQuality = 1;      // 4X MSAA的质量水平
 
 	//游戏时间管理
@@ -116,7 +117,6 @@ protected:
 
     D3D12_VIEWPORT mScreenViewport; 
     D3D12_RECT mScissorRect;
-	D3D12_RECT mClientRect;
 
 	UINT mRtvDescriptorSize = 0;
 	UINT mDsvDescriptorSize = 0;
