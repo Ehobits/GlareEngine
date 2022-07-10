@@ -340,7 +340,7 @@ void GameApp::Draw(const GameTimer& gt)
 
 	//Draw UI
 	PIXBeginEvent(mCommandList.Get(), 0, "Draw UI");
-	mEngineUI.Draw(mCommandList.Get(), IsZoomed(mhMainWnd));
+	mEngineUI.Draw(mCommandList.Get());
 	PIXEndEvent(mCommandList.Get());
 
 	if (m4xMsaaState)

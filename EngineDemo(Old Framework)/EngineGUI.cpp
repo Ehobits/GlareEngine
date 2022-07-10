@@ -8,7 +8,6 @@
 #include "FrameResource.h"
 
 using namespace Microsoft::WRL;
-bool gFullSreenMode = false;
 
 EngineGUI::EngineGUI()
 {
@@ -31,9 +30,6 @@ void EngineGUI::InitGUI(HWND EdithWnd, ID3D12Device* d3dDevice, ID3D12GraphicsCo
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
-
-	//元件的颜色初始化
-	ImGui::StyleColorsDark();
 
 	CreateUIDescriptorHeap(d3dCommandList);
 
@@ -113,18 +109,15 @@ void EngineGUI::CreateUIDescriptorHeap(ID3D12GraphicsCommandList* d3dCommandList
 
 	mEngineIconTexDescriptor = mGUISrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
 	mEngineIconTexDescriptor.Offset(1, SRVDescriptorHandleIncrementSize);
-	mEngineMaxTexDescriptor = mEngineIconTexDescriptor;
-	mEngineMaxTexDescriptor.Offset(1, SRVDescriptorHandleIncrementSize);
-	mEngineMinTexDescriptor = mEngineMaxTexDescriptor;
-	mEngineMinTexDescriptor.Offset(1, SRVDescriptorHandleIncrementSize);
-	mEngineCloseTexDescriptor = mEngineMinTexDescriptor;
-	mEngineCloseTexDescriptor.Offset(1, SRVDescriptorHandleIncrementSize);
 }
 
-void EngineGUI::Draw(ID3D12GraphicsCommandList* d3dCommandList, bool mWindowMaxSize)
+void EngineGUI::Draw(ID3D12GraphicsCommandList* d3dCommandList)
 {
 	ImGuiIO& io = ImGui::GetIO();
 	
+	ID3D12DescriptorHeap* descriptorHeaps[] = { mGUISrvDescriptorHeap };
+	d3dCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
 	// Start the Dear ImGui frame
 	ImGui_ImplDX12_NewFrame();
 	ImGui_ImplWin32_NewFrame();
@@ -134,7 +127,7 @@ void EngineGUI::Draw(ID3D12GraphicsCommandList* d3dCommandList, bool mWindowMaxS
 	// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
 	//if (mShowControlPanel)
 	{
-		DrawMainMenuBar(&mWindowMaxSize, gFullSreenMode);
+		DrawMainMenuBar();
 		DrawStatWindow();
 		//ImGui::ShowDemoWindow(&mShowControlPanel,&mWindowMaxSize);
 	}
@@ -155,9 +148,9 @@ void EngineGUI::Draw(ID3D12GraphicsCommandList* d3dCommandList, bool mWindowMaxS
 		DrawDebugWindow();
 	}
 
+	ImGui::End();
+
 	ImGui::Render();
-	ID3D12DescriptorHeap* descriptorHeaps[] = { mGUISrvDescriptorHeap };
-	d3dCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), d3dCommandList);	
 }
 
@@ -278,7 +271,6 @@ void EngineGUI::DrawControlPanel(float IconWindowHigh)
 		ImGui::SliderFloat("Fog Start", &FogStart, 0.0f, 1000.0f);
 		ImGui::SliderFloat("Fog Range", &FogRange, 0.0f, 1000.0f);
 	}
-	ImGui::End();
 }
 
 void EngineGUI::DrawDebugWindow()
@@ -351,15 +343,13 @@ void EngineGUI::DrawStatWindow()
 	ImGui::End();
 }
 
-void EngineGUI::DrawMainMenuBar(bool* IsMax, bool IsFullScreenMode)
+void EngineGUI::DrawMainMenuBar()
 {
 	ImGuiIO& io = ImGui::GetIO();
 	if (ImGui::BeginMainMenuBar())
 	{
-		ImGui::FocusWindow(ImGui::GetCurrentWindowRead());
 		if (ImGui::BeginMenu("File"))
 		{
-			ImGui::FocusWindow(ImGui::GetCurrentWindowRead());
 			if (ImGui::MenuItem("Exit", "X"))
 			{
 				SendMessage((HWND)io.ImeWindowHandle, WM_CLOSE, NULL, NULL);
@@ -378,30 +368,6 @@ void EngineGUI::DrawMainMenuBar(bool* IsMax, bool IsFullScreenMode)
 			ImGui::EndMenu();
 		}
 
-		//if (!IsFullScreenMode)
-		//{
-		//	ImGui::GetStyle().Colors[ImGuiCol_Button] = ImVec4(0.2f, 0.2f, 0.2f, 0.0f);
-		//	if (ImGui::ImageButton((void*)(mEngineMinTexDescriptor.ptr), ImVec2(ImGui::GetWindowSize().x - 210.0f, 0), ImVec2(25, 25), ImVec2(0, 0), ImVec2(1, 1),5))
-		//	{
-		//		SendMessage((HWND)io.ImeWindowHandle, WM_SYSCOMMAND, SC_MINIMIZE, NULL);
-		//	}
-		//	if (ImGui::ImageButton((void*)(mEngineMaxTexDescriptor.ptr), ImVec2(ImGui::GetWindowSize().x - 200.0f, 0), ImVec2(25, 25), ImVec2(0, 0), ImVec2(1, 1),5))
-		//	{
-		//		*IsMax = !(*IsMax);
-		//	}
-		//	if (ImGui::ImageButton((void*)(mEngineCloseTexDescriptor.ptr), ImVec2(ImGui::GetWindowSize().x - 190.0f, 0), ImVec2(25, 25), ImVec2(0, 0), ImVec2(1, 1),5))
-		//	{
-		//		SendMessage((HWND)io.ImeWindowHandle, WM_CLOSE, NULL, NULL);
-		//	}
-		//	ImGui::GetStyle().Colors[ImGuiCol_Button] = ImVec4(0.2f, 0.2f, 0.2f, 0.4f);
-		//}
-		//else
-		//{
-		//	if (ImGui::RadioButton("Close", true, ImVec2(ImGui::GetWindowSize().x - 160.0f, 0.0f)))
-		//	{
-		//		SendMessage((HWND)io.ImeWindowHandle, WM_CLOSE, NULL, NULL);
-		//	}
-		//}
 		ImGui::EndMainMenuBar();
 		ImGui::GetStyle().FramePadding.y = 3;
 	}

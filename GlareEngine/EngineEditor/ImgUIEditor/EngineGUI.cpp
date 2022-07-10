@@ -237,7 +237,7 @@ void EngineGUI::SetWindowStyles()
 
 void EngineGUI::DrawEngineIcon(float IconSize, float IconWindowHigh)
 {
-	ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
+	ImGui::SetNextWindowPos(ImVec2(0.0f, 24.0f));
 	ImGui::SetNextWindowSize(ImVec2(g->IO.DisplaySize.x * CLIENT_FROMLEFT, IconWindowHigh));
 	ImGui::SetNextWindowBgAlpha(1);
 	ImGui::Begin("Engine Icon", &isUIShow, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
@@ -247,7 +247,7 @@ void EngineGUI::DrawEngineIcon(float IconSize, float IconWindowHigh)
 
 void EngineGUI::DrawControlPanel(float IconWindowHigh)
 {
-	ImGui::SetNextWindowPos(ImVec2(0.0f, IconWindowHigh));
+	ImGui::SetNextWindowPos(ImVec2(0.0f, IconWindowHigh+24.0f));
 	ImGui::SetNextWindowSize(ImVec2(g->IO.DisplaySize.x * CLIENT_FROMLEFT, int(g->IO.DisplaySize.y * CLIENT_HEIGHT + 1.0f) - IconWindowHigh));
 	ImGui::SetNextWindowBgAlpha(1);
 

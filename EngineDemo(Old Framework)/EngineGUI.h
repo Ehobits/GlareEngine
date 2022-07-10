@@ -20,7 +20,7 @@ public:
 	void InitGUI(HWND EdithWnd, ID3D12Device* d3dDevice, ID3D12GraphicsCommandList* d3dCommandList, ID3D12DescriptorHeap* SrvDescriptorHeap, const int gNumFrameResources = 3);
 	bool OnMouseMove();
 
-	void Draw(ID3D12GraphicsCommandList* d3dCommandList, bool mWindowMaxSize);
+	void Draw(ID3D12GraphicsCommandList* d3dCommandList);
 	void ShutDown();
 
 	bool IsShowShadow()const { return show_shadow; }
@@ -55,7 +55,7 @@ private:
 	void DrawControlPanel(float IconWindowHigh);
 	void DrawDebugWindow();
 	void DrawStatWindow();
-	void DrawMainMenuBar(bool* IsMax, bool IsFullScreenMode);
+	void DrawMainMenuBar();
 private:
 
 	bool mShowControlPanel = true;
