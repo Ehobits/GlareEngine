@@ -125,7 +125,6 @@ void EngineGUI::Draw(ID3D12GraphicsCommandList* d3dCommandList)
 	ImGui::SetNextWindowBgAlpha(1);
 
 	// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-	//if (mShowControlPanel)
 	{
 		DrawMainMenuBar();
 		DrawStatWindow();
@@ -226,7 +225,8 @@ void EngineGUI::DrawEngineIcon(float IconSize, float IconWindowHigh)
 	ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x * CLIENT_FROMLEFT, IconWindowHigh));
 	ImGui::SetNextWindowBgAlpha(1);
 	ImGui::Begin("Engine Icon", &isUIShow, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
-	ImGui::Image((void*)(mEngineIconTexDescriptor.ptr), ImVec2(io.DisplaySize.x * 0.0417f, 0), ImVec2(IconSize, IconSize), ImVec2(0, 0), ImVec4(1.0f, 1.0f, 1.0f, 0.5f));
+	ImGui::Image((ImTextureID)mEngineIconTexDescriptor.ptr, ImVec2(IconSize, IconSize));
+	
 	ImGui::End();
 }
 

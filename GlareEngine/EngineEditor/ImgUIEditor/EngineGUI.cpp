@@ -241,8 +241,9 @@ void EngineGUI::DrawEngineIcon(float IconSize, float IconWindowHigh)
 	ImGui::SetNextWindowSize(ImVec2(g->IO.DisplaySize.x * CLIENT_FROMLEFT, IconWindowHigh));
 	ImGui::SetNextWindowBgAlpha(1);
 	ImGui::Begin("Engine Icon", &isUIShow, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
-	ImGui::Image((void*)(mEngineIconTexDescriptor.ptr), ImVec2(g->IO.DisplaySize.x * 0.0417f, 0), ImVec2(IconSize, IconSize), ImVec2(0, 0), ImVec4(1.0f, 1.0f, 1.0f, 0.5f));
-	ImGui::End();
+    ImGui::Image((ImTextureID)mEngineIconTexDescriptor.ptr, ImVec2(IconSize, IconSize));
+
+    ImGui::End();
 }
 
 void EngineGUI::DrawControlPanel(float IconWindowHigh)

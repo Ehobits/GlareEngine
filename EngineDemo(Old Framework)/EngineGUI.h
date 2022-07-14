@@ -97,9 +97,6 @@ private:
 	std::unique_ptr<TextureManage>  mTextureManager;
 	ID3D12DescriptorHeap* mGUISrvDescriptorHeap = nullptr;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE mEngineIconTexDescriptor;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE mEngineMaxTexDescriptor;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE mEngineMinTexDescriptor;
-	CD3DX12_GPU_DESCRIPTOR_HANDLE mEngineCloseTexDescriptor;
 	bool isUIShow = true;
 };
 
