@@ -51,8 +51,6 @@
 
 using namespace Microsoft::WRL;
 using namespace DirectX;
-using namespace std;
-
 
 
 namespace GlareEngine
@@ -234,6 +232,8 @@ namespace GlareEngine
 
     std::wstring StringToWString(const std::string& str);
     std::string WStringToString(const std::wstring& str);
+    std::string WstringToUTF8(const std::wstring& str);
+    std::wstring UTF8ToWstring(const std::string& str);
 
     bool CheckFileExist(const std::wstring& FileName);
 

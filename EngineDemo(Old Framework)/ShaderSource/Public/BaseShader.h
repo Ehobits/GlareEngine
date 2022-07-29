@@ -1,7 +1,8 @@
 #pragma once
-#include "BaseApp.h"
+
 #include "MathHelper.h"
 #include "InputLayout.h"
+
 class BaseShader
 {
 public:

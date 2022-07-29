@@ -144,7 +144,7 @@ void ShadowMap::BuildResource()
 
 
 
-void ShadowMap::UpdateShadowTransform(const GameTimer& gt)
+void ShadowMap::UpdateShadowTransform()
 {
 
 	// Animate the lights (and hence shadows).

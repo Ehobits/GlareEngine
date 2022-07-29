@@ -406,7 +406,7 @@ void HeightmapTerrain::BuildQuadPatchGeometry()
 
 
 	auto geo = std::make_unique<::MeshGeometry>();
-	geo->Name = "TerrainGeo";
+	geo->Name = L"TerrainGeo";
 
 	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
 	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
@@ -430,7 +430,7 @@ void HeightmapTerrain::BuildQuadPatchGeometry()
 	submesh.StartIndexLocation = 0;
 	submesh.BaseVertexLocation = 0;
 
-	geo->DrawArgs["HeightMapTerrain"] = submesh;
+	geo->DrawArgs[L"HeightMapTerrain"] = submesh;
 
 	mGeometries= std::move(geo);
 }

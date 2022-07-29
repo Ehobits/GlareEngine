@@ -38,6 +38,7 @@ public:
 	float GetGrassMinWind()const { return GrassMinWind; }
 	float GetGrassMaxWind()const { return GrassMaxWind; }
 
+	void SetFPSText(std::wstring Text);
 	void SetCameraPosition(const XMFLOAT3& position) { mCameraPosition = position; }
 
 	XMFLOAT3 GetGrassColor()const { return XMFLOAT3(mGrassColor); }

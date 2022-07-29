@@ -52,7 +52,7 @@ void Grass::BuildGrassVB()
 
 
 	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = "GrassGeo";
+	geo->Name = L"GrassGeo";
 
 	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
 	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
@@ -71,7 +71,7 @@ void Grass::BuildGrassVB()
 	submesh.StartIndexLocation = 0;
 	submesh.BaseVertexLocation = 0;
 
-	geo->DrawArgs["Grass"] = submesh;
+	geo->DrawArgs[L"Grass"] = submesh;
 
 	mGeometries = std::move(geo);
 }

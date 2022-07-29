@@ -5,6 +5,7 @@
 #include <comdef.h>
 #include <fstream>
 #include <locale>
+#include <codecvt>
 
 #define RandomSize 1024
 
@@ -507,6 +508,18 @@ namespace GlareEngine
 		char* pchar = (char*)t;
 		string result = pchar;
 		return result;
+	}
+
+	std::string WstringToUTF8(const std::wstring& str)
+	{
+		std::wstring_convert<std::codecvt_utf8<wchar_t> > strCnv;
+		return strCnv.to_bytes(str);
+	}
+
+	std::wstring UTF8ToWstring(const std::string& str)
+	{
+		std::wstring_convert< std::codecvt_utf8<wchar_t> > strCnv;
+		return strCnv.from_bytes(str);
 	}
 
 	bool CheckFileExist(const std::wstring& FileName)

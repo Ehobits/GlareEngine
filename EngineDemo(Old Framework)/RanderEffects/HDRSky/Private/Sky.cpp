@@ -34,7 +34,7 @@ void Sky::BuildSkyMesh()
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	mSkyMesh= std::make_unique<::MeshGeometry>();
-	mSkyMesh->Name = "SphereGeo";
+	mSkyMesh->Name = L"SphereGeo";
 
 	//CPU Vertex Buffer
 	ThrowIfFailed(D3DCreateBlob(vbByteSize, &mSkyMesh->VertexBufferCPU));
@@ -59,7 +59,7 @@ void Sky::BuildSkyMesh()
 	submesh.StartIndexLocation = 0;
 	submesh.BaseVertexLocation = 0;
 
-	mSkyMesh->DrawArgs["Sphere"] = submesh;
+	mSkyMesh->DrawArgs[L"Sphere"] = submesh;
 
 	
 }

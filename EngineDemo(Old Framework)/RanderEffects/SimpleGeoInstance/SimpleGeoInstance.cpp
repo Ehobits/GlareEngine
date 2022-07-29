@@ -26,7 +26,7 @@ void SimpleGeoInstance::BuildSimpleGeometryMesh(SimpleGeometry GeoType)
 {
     GeometryGenerator Geo;
     MeshData SimpleGeoMesh;
-    std::string MeshName;
+    std::wstring MeshName;
     XMFLOAT3 BoundsExtents = XMFLOAT3(0.0f, 0.0f, 0.0f);
 
     switch (GeoType)
@@ -34,7 +34,7 @@ void SimpleGeoInstance::BuildSimpleGeometryMesh(SimpleGeometry GeoType)
     case SimpleGeometry::Box:
     {
         SimpleGeoMesh = Geo.CreateBox(5, 5, 5, 0);
-        MeshName = "Box";
+        MeshName = L"Box";
         BoundsExtents = XMFLOAT3(2.5f, 2.5f, 2.5f);
         break;
     }
@@ -42,27 +42,27 @@ void SimpleGeoInstance::BuildSimpleGeometryMesh(SimpleGeometry GeoType)
     {
         SimpleGeoMesh = Geo.CreateSphere(10.0f, 50, 50);
         BoundsExtents = XMFLOAT3(5.0f, 5.0f, 5.0f);
-        MeshName = "Sphere";
+        MeshName = L"Sphere";
         break;
     }
     case SimpleGeometry::Cylinder:
     {
         SimpleGeoMesh = Geo.CreateCylinder(10.0f, 5.0f, 20.0f, 10, 10);
         BoundsExtents = XMFLOAT3(5.0f, 10.0f, 5.0f);
-        MeshName = "Cylinder";
+        MeshName = L"Cylinder";
         break;
     }
     case SimpleGeometry::Grid:
     {
         SimpleGeoMesh = Geo.CreateGrid(100, 100, 10, 10);
         BoundsExtents = XMFLOAT3(50.0f, 1.0f, 50.0f);
-        MeshName = "Grid";
+        MeshName = L"Grid";
         break;
     }
     case SimpleGeometry::Quad:
     {
         SimpleGeoMesh = Geo.CreateQuad(0.0f, 0.0f, 200.0f, 200.0f, 0.0f);
-        MeshName = "Quad";
+        MeshName = L"Quad";
         break;
     }
     default:

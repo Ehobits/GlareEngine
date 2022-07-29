@@ -35,7 +35,7 @@ void EngineGUI::InitGUI(HWND EdithWnd, ID3D12Device* d3dDevice, ID3D12GraphicsCo
 
 	ImGui_ImplWin32_Init(EdithWnd);
 	ImGui_ImplDX12_Init(md3dDevice, gNumFrameResources,
-		DXGI_FORMAT_R8G8B8A8_UNORM, mGUISrvDescriptorHeap,
+		DXGI_FORMAT_R16G16B16A16_FLOAT, mGUISrvDescriptorHeap,
 		mGUISrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 		mGUISrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
@@ -65,6 +65,11 @@ void EngineGUI::InitGUI(HWND EdithWnd, ID3D12Device* d3dDevice, ID3D12GraphicsCo
 bool EngineGUI::OnMouseMove()
 {
 	return ImGui::GetIO().WantCaptureMouse;
+}
+
+void EngineGUI::SetFPSText(std::wstring Text)
+{
+	FPSText = Text;
 }
 
 void EngineGUI::CreateUIDescriptorHeap(ID3D12GraphicsCommandList* d3dCommandList)
@@ -239,6 +244,7 @@ void EngineGUI::DrawControlPanel(float IconWindowHigh)
 
 	ImGui::Begin("Control Panel", &isUIShow, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
+	ImGui::Text(WstringToUTF8(FPSText).c_str());
 	ImGui::SliderFloat("Camera Move Speed", &CameraMoveSpeed, 0.0f, 5000.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
 
 	ImGui::Text("Show Sence");

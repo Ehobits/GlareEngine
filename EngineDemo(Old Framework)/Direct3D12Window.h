@@ -1,6 +1,5 @@
 #pragma once
 
-#include "BaseApp.h"
 #include "MathHelper.h"
 #include "UploadBuffer.h"
 #include "GeometryGenerator.h"
@@ -97,47 +96,70 @@ enum class RenderLayer : int
 
 
 //APPLICATION
-class GameApp : public D3DApp
+class Direct3D12Window
 {
 public:
-	GameApp(HINSTANCE hInstance);
-	GameApp(const GameApp& rhs) = delete;
-	GameApp& operator=(const GameApp& rhs) = delete;
-	~GameApp();
+	Direct3D12Window();
+	~Direct3D12Window();
 
-	virtual bool Initialize()override;
+	// 两大主要设定
+	void SethWnd(HWND hWnd) { i_hWnd = hWnd; }
+	void SetWinSize(int width, int height) { i_Width = width, i_Height = height; }
+
+	virtual bool Initialize();
+	virtual bool InitDirect3D();			//初始化Direct3D
+
+	virtual bool IsCreate();
+	virtual void OnResize();
+
+	virtual void Update();
+	virtual void Render();
+
+	// 响应输入部分 
+	virtual void OnLButtonDown(WPARAM btnState, int x, int y);
+	virtual void OnLButtonUp(WPARAM btnState, int x, int y);
+	virtual void OnRButtonDown(WPARAM btnState, int x, int y);
+	virtual void OnRButtonUp(WPARAM btnState, int x, int y);
+	virtual void OnMButtonDown(WPARAM btnState, int x, int y);
+	virtual void OnMButtonUp(WPARAM btnState, int x, int y);
+	virtual void OnMouseMove(WPARAM btnState, int x, int y);
+	virtual void OnMouseWheel(WPARAM btnState, int x, int y);
+
+	virtual void ActiveSystemDesktopSwap();
+	virtual void CalculateFrameStats();
+
+	virtual void OnKeyDown(UINT8 key);
+	virtual void OnKeyUp(UINT8 key);
 
 private:
-	virtual void OnResize()override;
-	virtual void CreateRtvAndDsvDescriptorHeaps()override;
-	virtual void Update(const GameTimer& gt)override;
-	virtual void OnMouseDown(WPARAM btnState, int x, int y)override;
-	virtual void OnMouseUp(WPARAM btnState, int x, int y)override;
-	virtual void OnMouseMove(WPARAM btnState, int x, int y)override;
-	//Draw all things
-	virtual void Draw(const GameTimer& gt)override;
+	// 日志部分
+	void LogAdapters();
+	void LogAdapterOutputs(IDXGIAdapter* adapter);
+	void LogOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format);
 
-	void OnKeyboardInput(const GameTimer& gt);
+	void FlushCommandQueue();		//刷新命令队列
 
-	void UpdateCamera(const GameTimer& gt);
+	void UpdateCamera();
 
-	void UpdateObjectCBs(const GameTimer& gt);
+	void UpdateObjectCBs();
 
-	void UpdateInstanceCBs(const GameTimer& gt);
+	void UpdateInstanceCBs();
 
-	void UpdateMaterialCBs(const GameTimer& gt);
+	void UpdateMaterialCBs();
 
-	void UpdateMainPassCB(const GameTimer& gt);
+	void UpdateMainPassCB();
 
-	void UpdateWaves(const GameTimer& gt);
+	void UpdateWaves();
 
-	void UpdateShadowPassCB(const GameTimer& gt);
+	void UpdateShadowPassCB();
 
-	void UpdateTerrainPassCB(const GameTimer& gt);
+	void UpdateTerrainPassCB();
 
-	void UpdateAnimation(const GameTimer& gt);
+	void UpdateAnimation();
 
-
+	void CreateDirectDevice();
+	void CreateCommandQueueAndSwapChain();
+	void CreateRtvAndDsvDescriptorHeaps();
 
 	//创建根签名
 	void BuildRootSignature();
@@ -161,7 +183,6 @@ private:
 
 	//创建资源描述堆
 	void CreateDescriptorHeaps();
-	void CreatePBRSRVinDescriptorHeap(vector<ID3D12Resource*> TexResource, int* SRVIndex, CD3DX12_CPU_DESCRIPTOR_HANDLE* hDescriptor, wstring MaterialName);
 
 	//sampler
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 7> GetStaticSamplers();
@@ -176,42 +197,92 @@ private:
 	//绘制渲染项
 	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems, bool IsIndexInstanceDraw = true);
 	//Draw Scene To ShadowMap
-	void DrawSceneToShadowMap(const GameTimer& gr);
+	void DrawSceneToShadowMap();
 	//Draw Shock Wave Water
-	void DrawShockWaveWater(const GameTimer& gt);
-	void DrawWaterReflectionMap(const GameTimer& gt);
-	void DrawWaterRefractionMap(const GameTimer& gt);
+	void DrawShockWaveWater();
+	void DrawWaterReflectionMap();
+	void DrawWaterRefractionMap();
 	//Draw Height map terrain
-	void DrawHeightMapTerrain(const GameTimer& gr, bool IsReflection = false);
+	void DrawHeightMapTerrain(bool IsReflection = false);
 	//Draw Grass
-	void DrawGrass(const GameTimer& gr, bool IsReflection = false);
+	void DrawGrass(bool IsReflection = false);
 
 	//Height map terrain
 	HeightmapTerrain::InitInfo HeightmapTerrainInit();
 
+public:
+	//游戏时间管理
+	GameTimer mTimer;
+	
+	// 宽高比
+	float     AspectRatio()const;
+
 private:
+
+	HWND i_hWnd = nullptr;
+	int i_Width = 0;
+	int i_Height = 0;
+
+	// Set true to use 4X MSAA (?.1.8).  The default is false.
+	bool      m4xMsaaState = false;    // 4X MSAA enabled
+	UINT      m4xMsaaQuality = 1;      // 4X MSAA的质量水平
 
 	// 帧资源
 	const int gNumFrameResources = 3;
-	std::vector<std::unique_ptr<FrameResource>> mFrameResources;
-	FrameResource* mCurrFrameResource = nullptr;
-	int mCurrFrameResourceIndex = 0;
+	std::vector<std::unique_ptr<FrameResource>> FrameResources;
+	FrameResource* CurrFrameResource = nullptr;
+	int CurrFrameResourceIndex = 0;
 
-	UINT mCbvSrvDescriptorSize = 0;
+	UINT CbvSrvDescriptorSize = 0;
 
-	ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
+	// ---------------------------------------------------
+	ComPtr<IDXGIFactory4> DXGIFactory = nullptr;
+	ComPtr<IDXGIAdapter1> DeviceAdapter = nullptr;
+	ComPtr<IDXGISwapChain> SwapChain = nullptr;
+	ComPtr<ID3D12Device> d3dDevice = nullptr;
+	ComPtr<ID3D12RootSignature> RootSignature = nullptr;
+	ComPtr<ID3D12CommandQueue> CommandQueue = nullptr;
+	ComPtr<ID3D12CommandAllocator> DirectCmdListAlloc = nullptr;
+	ComPtr<ID3D12GraphicsCommandList5> CommandList = nullptr;
+
+	// 同步对象。
+	ComPtr<ID3D12Fence> Fence;
+	UINT64 mCurrentFence = 0;
+
+	UINT RtvDescriptorSize = 0;
+	UINT DsvDescriptorSize = 0;
+	UINT CbvSrvUavDescriptorSize = 0;
+
+	// 派生类应在派生构造函数中设置它们以自定义起始值。
+	DXGI_FORMAT BackBufferFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	DXGI_FORMAT DepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;//深度值类型
+
+	// 窗口大小和裁切大小
+	CD3DX12_VIEWPORT ScreenViewport;
+	CD3DX12_RECT ScissorRect;
+
+	// ---------------------------------------------------
+	static const int SwapChainBufferCount = 3; // 三缓冲
+	int mCurrBackBuffer = 0; // 后缓冲
+	ComPtr<ID3D12Resource> mSwapChainBuffer[SwapChainBufferCount] = { nullptr };
+	ComPtr<ID3D12Resource> DepthStencilBuffer = nullptr;
+	ComPtr<ID3D12Resource> MSAARenderTargetBuffer = nullptr;
+
 	ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
 	ComPtr<ID3D12DescriptorHeap> mGUISrvDescriptorHeap = nullptr;
+	ComPtr<ID3D12DescriptorHeap> RTVDescriptorHeap = nullptr;
+	ComPtr<ID3D12DescriptorHeap> MSAARTVDescriptorHeap = nullptr;
+	ComPtr<ID3D12DescriptorHeap> DSVDescriptorHeap = nullptr;
+	// ---------------------------------------------------
+
+	std::unordered_map<std::wstring, std::unique_ptr<::MeshGeometry>> mGeometries;
+	std::unordered_map<std::wstring, std::unique_ptr<Texture>> mTextures;
 
 
-	std::unordered_map<std::string, std::unique_ptr<::MeshGeometry>> mGeometries;
-	std::unordered_map<std::string, std::unique_ptr<Texture>> mTextures;
+	std::unique_ptr<PSO> PSOs;
 
-
-	std::unique_ptr<PSO> mPSOs;
 	//Shaders
-	std::unordered_map<std::string, BaseShader*> mShaders;
-
+	std::unordered_map<std::wstring, BaseShader*> Shaders;
 
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
@@ -242,34 +313,36 @@ private:
 	float mSunTheta = 1.25f * XM_PI;
 	float mSunPhi = XM_PIDIV4;
 
-	POINT mLastMousePos;
+	POINT mLastMousePos = { 0,0 };
 
 	//UI
-	EngineGUI mEngineUI;
+	EngineGUI EngineUI;
 
 	//相机
-	Camera mCamera;
-	//TEXTURE MANAGER
-	std::unique_ptr<TextureManage> mTextureManage;
-	int mSRVSize = 0;
-	std::vector<wstring> mPBRTextureName;
-	//sky
-	std::unique_ptr<Sky> mSky;
+	Camera Camera;
 
+	//TEXTURE MANAGER
+	std::unique_ptr<TextureManage> textureManage;
+	int mSRVSize = 0;
+	std::vector<std::wstring> mPBRTextureName;
+
+	// 天空球
+	std::unique_ptr<Sky> sky;
 	int mSkyMapIndex = 0;
 
-	//Instance Culling
+	// 实例剔除
 	bool mFrustumCullingEnabled = true;
 	BoundingFrustum mCamFrustum;
-	std::unique_ptr<SimpleGeoInstance> mSimpleGeoInstance;
+	std::unique_ptr<SimpleGeoInstance> simpleGeoInstance;
 
-	//shadow map 
-	std::unique_ptr<ShadowMap> mShadowMap;
+	// 阴影贴图
+	std::unique_ptr<ShadowMap> shadowMap;
 	int mShadowMapIndex = 0;
-	static bool RedrawShadowMap;
+	bool RedrawShadowMap = true;
+	int ShadowMapSize = 4096;
 
-	//Model Loader
-	std::unique_ptr<ModelLoader> mModelLoder;
+	// 模型加载器
+	std::unique_ptr<ModelLoader> modelLoder;
 
 	//animation transform
 	std::vector<XMFLOAT4X4> transforms;
@@ -286,8 +359,6 @@ private:
 	int mBlendMapIndex = 0;
 	int mHeightMapIndex = 0;
 	int mRGBNoiseMapIndex = 0;
-	//play back anime 
-	//std::unordered_map<std::string, AnimePlayback> AnimationPlayback;
 
 	//sizeof ObjectConstants 
 	UINT mObjCBByteSize;
