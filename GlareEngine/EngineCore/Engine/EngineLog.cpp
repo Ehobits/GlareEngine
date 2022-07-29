@@ -63,11 +63,11 @@ void EngineLog::SaveLog()
 	wchar_t filePath[MAX_PATH + 1] = { 0 };
 	GetModuleFileName(NULL, filePath, MAX_PATH);
 	std::wstring OutputPath = GetBasePath(filePath);
-	wofstream outfile;
+	std::wofstream outfile;
 	outfile.open(OutputPath + L"EngineLog.txt");
 	for (auto &log: DisplayLogs)
 	{
-		outfile << log << endl;
+		outfile << log << std::endl;
 	}
 	outfile.close();
 }

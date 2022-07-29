@@ -93,9 +93,9 @@ void Grass::BuildMaterials()
 
 void Grass::FillSRVDescriptorHeap(int* SRVIndex, CD3DX12_CPU_DESCRIPTOR_HANDLE* hDescriptor)
 {
-	vector<ID3D12Resource*> PBRTexResource;
+	std::vector<ID3D12Resource*> PBRTexResource;
 	PBRTexResource.resize(PBRTextureType::Count);
-	wstring e = L"PBRGrass";
+	std::wstring e = L"PBRGrass";
 	PBRTexResource[PBRTextureType::DiffuseSrvHeapIndex] = mTextureManage->GetTexture(e + L"\\" + e + L"_albedo")->Resource.Get();
 	PBRTexResource[PBRTextureType::NormalSrvHeapIndex] = mTextureManage->GetTexture(e + L"\\" + e + L"_normal")->Resource.Get();
 	PBRTexResource[PBRTextureType::AoSrvHeapIndex] = mTextureManage->GetTexture(e + L"\\" + e + L"_ao")->Resource.Get();

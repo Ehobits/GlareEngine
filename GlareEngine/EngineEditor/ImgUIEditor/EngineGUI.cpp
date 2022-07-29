@@ -311,8 +311,8 @@ void EngineGUI::DrawDebugWindow()
 	ImGui::Text("Camera Position X:%.1f Y:%.1f Z:%.1f", mCameraPosition.x, mCameraPosition.y, mCameraPosition.z);
 
 	//Filter logs
-	string Filter(FilterString);
-	if (strcmp(FilterString, "") != 0)
+    std::string Filter(FilterString);
+	if (std::strcmp(FilterString, "") != 0)
 	{
 		EngineLog::Filter(StringToWString(Filter));
 		mLogs = EngineLog::GetFilterLogs();

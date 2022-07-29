@@ -152,8 +152,8 @@ public:
 	std::unique_ptr<UploadBuffer<SkinnedConstants>> SkinnedCB = nullptr;
 	std::unique_ptr<UploadBuffer<TerrainConstants>> TerrainCB = nullptr;
 	
-	vector<std::unique_ptr<UploadBuffer<InstanceConstants>>> InstanceSimpleObjectCB ;
-	vector<std::unique_ptr<UploadBuffer<InstanceConstants>>> ReflectionInstanceSimpleObjectCB;
+	std::vector<std::unique_ptr<UploadBuffer<InstanceConstants>>> InstanceSimpleObjectCB ;
+	std::vector<std::unique_ptr<UploadBuffer<InstanceConstants>>> ReflectionInstanceSimpleObjectCB;
 	
 	// 在GPU处理完引用它的命令之前，我们无法更新动态顶点缓冲区。 
 	//因此，每个框架都需要自己的框架。

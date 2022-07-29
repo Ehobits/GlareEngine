@@ -16,12 +16,12 @@ ModelLoader::~ModelLoader()
 }
 
 
-bool ModelLoader::LoadModel(string filename)
+bool ModelLoader::LoadModel(std::wstring filename)
 {
-	directory = "../Resource/Model/";
+	directory = L"../Resource/Model/";
 
-	string FullName= directory + filename;
-	const aiScene* pScene = importer.ReadFile(FullName,
+	std::wstring FullName= directory + filename;
+	const aiScene* pScene = importer.ReadFile(WStringToString(FullName),
 		aiProcessPreset_TargetRealtime_Quality |
 		aiProcess_ConvertToLeftHanded);
 
@@ -41,13 +41,13 @@ bool ModelLoader::LoadModel(string filename)
 	return true;
 }
 
-bool ModelLoader::LoadAnimation(string filename)
+bool ModelLoader::LoadAnimation(std::wstring filename)
 {
-	directory = "Model/";
+	directory = L"Model/";
 
 
-	string FullName = directory + filename;
-	const aiScene* pAnimeScene = importer.ReadFile(FullName,
+	std::wstring FullName = directory + filename;
+	const aiScene* pAnimeScene = importer.ReadFile(WStringToString(FullName),
 		aiProcessPreset_TargetRealtime_Quality);
 	if (pAnimeScene == NULL)
 	{
@@ -87,23 +87,23 @@ bool ModelLoader::LoadAnimation(string filename)
 	return true;
 }
 
-void ModelLoader::DrawModel(string ModelName)
+void ModelLoader::DrawModel(std::string ModelName)
 {
 }
 
-vector<::ModelMesh>& ModelLoader::GetModelMesh(string ModelName)
+std::vector<::ModelMesh>& ModelLoader::GetModelMesh(std::wstring ModelName)
 {
 	return meshes[ModelName];
 }
 
-unordered_map<string, vector<Texture*>>& ModelLoader::GetAllModelTextures()
+std::unordered_map<std::wstring, std::vector<Texture*>>& ModelLoader::GetAllModelTextures()
 {
 	return ModelTextures;
 }
 
 
 
-vector<string> ModelLoader::GetModelTextureNames(string modelname)
+std::vector<std::wstring> ModelLoader::GetModelTextureNames(std::wstring modelname)
 {
 	return ModelTexturesName[modelname];
 }
@@ -118,7 +118,7 @@ void ModelLoader::BuildMaterials()
 	for (auto e : ModelTextures)
 	{
 		Materials::GetMaterialInstance()->BuildMaterials(
-			wstring(e.first.begin(), e.first.end()),
+			std::wstring(e.first.begin(), e.first.end()),
 			0.09f,
 			XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
 			XMFLOAT3(0.1f, 0.1f, 0.1f),
@@ -130,7 +130,7 @@ void ModelLoader::BuildMaterials()
 
 void ModelLoader::FillSRVDescriptorHeap(int* SRVIndex, CD3DX12_CPU_DESCRIPTOR_HANDLE* hDescriptor)
 {
-	vector<ID3D12Resource*> PBRTexResource;
+	std::vector<ID3D12Resource*> PBRTexResource;
 	PBRTexResource.resize(PBRTextureType::Count);
 	for (auto& e : ModelTextures)
 	{
@@ -141,7 +141,7 @@ void ModelLoader::FillSRVDescriptorHeap(int* SRVIndex, CD3DX12_CPU_DESCRIPTOR_HA
 		PBRTexResource[PBRTextureType::RoughnessSrvHeapIndex] = e.second[4]->Resource.Get();
 		PBRTexResource[PBRTextureType::HeightSrvHeapIndex] = e.second[5]->Resource.Get();
 
-		pTextureManage->CreatePBRSRVinDescriptorHeap(PBRTexResource, SRVIndex, hDescriptor, wstring(e.first.begin(), e.first.end()));
+		pTextureManage->CreatePBRSRVinDescriptorHeap(PBRTexResource, SRVIndex, hDescriptor, std::wstring(e.first.begin(), e.first.end()));
 	}
 }
 
@@ -168,14 +168,14 @@ void ModelLoader::ProcessNode(aiNode* node, const aiScene* scene,bool isAnimatio
 }
 
 
-string textype;
+std::string textype;
 
 ::ModelMesh ModelLoader::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 {
 	// Data to fill
-	vector<Vertices::PosNormalTangentTexc> vertices;
-	vector<UINT> indices;
-	vector<Texture> textures;
+	std::vector<Vertices::PosNormalTangentTexc> vertices;
+	std::vector<UINT> indices;
+	std::vector<Texture> textures;
 
 	if (mesh->mMaterialIndex >= 0)
 	{
@@ -250,7 +250,7 @@ string textype;
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 		aiString texturename;
 		material->GetTexture(aiTextureType_DIFFUSE, 0, &texturename);
-		string texture(texturename.C_Str());
+		std::wstring texture = StringToWString(texturename.C_Str());
 
 		int it = (int)texture.find_last_of('\\');
 		texture = texture.substr(it + 1, texture.find_last_of('.') - it - 1);
@@ -269,10 +269,10 @@ AnimationMesh ModelLoader::ProcessAnimation(aiMesh* mesh, const aiScene* scene)
 	for (UINT i = 0; i < mesh->mNumBones; i++)
 	{
 		UINT bone_index = 0;
-		string bone_name(mesh->mBones[i]->mName.data);
+		std::wstring bone_name = StringToWString(mesh->mBones[i]->mName.data);
 #if defined(_DEBUG)
-		string DebugInfo(ModelName + "-->" + AnimeName + ":" + bone_name+"\n");
-		::OutputDebugStringA(DebugInfo.c_str());
+		std::wstring DebugInfo(ModelName + L"-->" + AnimeName + L":" + bone_name + L"\n");
+		::OutputDebugString(DebugInfo.c_str());
 #endif
 
 		//if (mAnimations[ModelName][AnimeName].m_bone_mapping.find(bone_name)
@@ -306,11 +306,11 @@ AnimationMesh ModelLoader::ProcessAnimation(aiMesh* mesh, const aiScene* scene)
 
 
 
-string ModelLoader::DetermineTextureType(const aiScene* scene, aiMaterial* mat)
+std::string ModelLoader::DetermineTextureType(const aiScene* scene, aiMaterial* mat)
 {
 	aiString textypeStr;
 	mat->GetTexture(aiTextureType_DIFFUSE, 0, &textypeStr);
-	string textypeteststr = textypeStr.C_Str();
+	std::string textypeteststr = textypeStr.C_Str();
 	if (textypeteststr == "*0" || textypeteststr == "*1" || textypeteststr == "*2" || textypeteststr == "*3" || textypeteststr == "*4" || textypeteststr == "*5")
 	{
 		if (scene->mTextures[0]->mHeight == 0)
@@ -322,7 +322,7 @@ string ModelLoader::DetermineTextureType(const aiScene* scene, aiMaterial* mat)
 			return "embedded non-compressed texture";
 		}
 	}
-	if (textypeteststr.find('.') != string::npos)
+	if (textypeteststr.find('.') != std::string::npos)
 	{
 		return "textures are on disk";
 	}
@@ -333,7 +333,7 @@ string ModelLoader::DetermineTextureType(const aiScene* scene, aiMaterial* mat)
 
 int ModelLoader::GetTextureIndex(aiString* str)
 {
-	string tistr;
+	std::string tistr;
 	tistr = str->C_Str();
 	tistr = tistr.substr(1);
 	return stoi(tistr);
@@ -347,37 +347,37 @@ void ModelLoader::GetTextureFromModel(const aiScene* scene, int textureindex, Te
 	EngineUtility::CreateWICTextureFromMemory(dev, pCommandList, texture.Resource.ReleaseAndGetAddressOf(), texture.UploadHeap.ReleaseAndGetAddressOf(), reinterpret_cast<unsigned char*>(scene->mTextures[textureindex]->pcData),*size);
 }
 
-void ModelLoader::LoadPBRTexture(string texturename)
+void ModelLoader::LoadPBRTexture(std::wstring texturename)
 {
 	//store model's texture name
 	ModelTexturesName[ModelName].push_back(texturename);
 
-	string rootfilename = directory +"PBRTextures/"+ texturename;
+	std::wstring rootfilename = directory + L"PBRTextures/" + texturename;
 	//aldedo
-	string Fullfilenames = rootfilename + "_albedo";
-	ModelTextures[texturename].push_back(pTextureManage->GetModelTexture(wstring(Fullfilenames.begin(), Fullfilenames.end())).get());
+	std::wstring Fullfilenames = rootfilename + L"_albedo";
+	ModelTextures[texturename].push_back(pTextureManage->GetModelTexture(std::wstring(Fullfilenames.begin(), Fullfilenames.end())).get());
 	//ao
-	Fullfilenames = rootfilename + "_normal";
-	ModelTextures[texturename].push_back(pTextureManage->GetModelTexture(wstring(Fullfilenames.begin(), Fullfilenames.end())).get());
+	Fullfilenames = rootfilename + L"_normal";
+	ModelTextures[texturename].push_back(pTextureManage->GetModelTexture(std::wstring(Fullfilenames.begin(), Fullfilenames.end())).get());
 	//Metallic
-	Fullfilenames = rootfilename + "_ao";
-	ModelTextures[texturename].push_back(pTextureManage->GetModelTexture(wstring(Fullfilenames.begin(), Fullfilenames.end())).get());
+	Fullfilenames = rootfilename + L"_ao";
+	ModelTextures[texturename].push_back(pTextureManage->GetModelTexture(std::wstring(Fullfilenames.begin(), Fullfilenames.end())).get());
 	//normal
-	Fullfilenames = rootfilename + "_metallic";
-	ModelTextures[texturename].push_back(pTextureManage->GetModelTexture(wstring(Fullfilenames.begin(), Fullfilenames.end())).get());
+	Fullfilenames = rootfilename + L"_metallic";
+	ModelTextures[texturename].push_back(pTextureManage->GetModelTexture(std::wstring(Fullfilenames.begin(), Fullfilenames.end())).get());
 	//Roughness
-	Fullfilenames = rootfilename + "_roughness";
-	ModelTextures[texturename].push_back(pTextureManage->GetModelTexture(wstring(Fullfilenames.begin(), Fullfilenames.end())).get());
+	Fullfilenames = rootfilename + L"_roughness";
+	ModelTextures[texturename].push_back(pTextureManage->GetModelTexture(std::wstring(Fullfilenames.begin(), Fullfilenames.end())).get());
 	//Height
-	Fullfilenames = rootfilename + "_height";
-	ModelTextures[texturename].push_back(pTextureManage->GetModelTexture(wstring(Fullfilenames.begin(), Fullfilenames.end())).get());
+	Fullfilenames = rootfilename + L"_height";
+	ModelTextures[texturename].push_back(pTextureManage->GetModelTexture(std::wstring(Fullfilenames.begin(), Fullfilenames.end())).get());
 }
 
 
 
-vector<Texture> ModelLoader::LoadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName, const aiScene* scene)
+std::vector<Texture> ModelLoader::LoadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName, const aiScene* scene)
 {
-	vector<Texture> textures;
+	std::vector<Texture> textures;
 	for (UINT i = 0; i < mat->GetTextureCount(type); i++)
 	{
 		aiString str;
@@ -403,12 +403,12 @@ vector<Texture> ModelLoader::LoadMaterialTextures(aiMaterial* mat, aiTextureType
 			}
 			else
 			{
-				string filename = string(str.C_Str());
+				std::wstring filename = StringToWString(str.C_Str());
 				int it = (int)filename.find_last_of('\\');
 				filename = filename.substr(it+1, filename.size()-it);
 
 				filename = directory + filename;
-				wstring filenamews = wstring(filename.begin(), filename.end());
+				std::wstring filenamews = std::wstring(filename.begin(), filename.end());
 				EngineUtility::CreateWICTextureFromFile(dev, pCommandList, texture.Resource.ReleaseAndGetAddressOf(), texture.UploadHeap.ReleaseAndGetAddressOf(), filenamews);
 			}
 			texture.type = typeName;

@@ -46,7 +46,7 @@ std::unique_ptr<Texture>& TextureManage::GetModelTexture(std::wstring name, bool
 	return mTextures[name];
 }
 
-void TextureManage::CreatePBRSRVinDescriptorHeap(vector<ID3D12Resource*> TexResource, int* SRVIndex, CD3DX12_CPU_DESCRIPTOR_HANDLE* hDescriptor, wstring MaterialName)
+void TextureManage::CreatePBRSRVinDescriptorHeap(std::vector<ID3D12Resource*> TexResource, int* SRVIndex, CD3DX12_CPU_DESCRIPTOR_HANDLE* hDescriptor, std::wstring MaterialName)
 {
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;

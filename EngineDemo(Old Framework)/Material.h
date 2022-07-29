@@ -50,7 +50,7 @@ public:
 	static int GetMaterialSize() { return MatCBIndex; }
 
 	void BuildMaterials(
-		wstring name,
+		std::wstring name,
 		float Height_Scale,
 		XMFLOAT4 DiffuseAlbedo,
 		XMFLOAT3 FresnelR0,
@@ -70,7 +70,7 @@ private:
 
 	static int MatCBIndex;
 
-	std::vector<wstring> mPBRTextureName;
+	std::vector<std::wstring> mPBRTextureName;
 
 	std::unordered_map<std::wstring, std::unique_ptr<::Material>> mMaterials;
 };

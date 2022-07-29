@@ -191,7 +191,6 @@ private:
 
 	//waves
 	float GetHillsHeight(float x, float z)const;
-	XMFLOAT3 GetHillsNormal(float x, float z)const;
 
 
 	//绘制渲染项
@@ -264,7 +263,7 @@ private:
 	// ---------------------------------------------------
 	static const int SwapChainBufferCount = 3; // 三缓冲
 	int mCurrBackBuffer = 0; // 后缓冲
-	ComPtr<ID3D12Resource> mSwapChainBuffer[SwapChainBufferCount] = { nullptr };
+	ComPtr<ID3D12Resource> SwapChainBuffer[SwapChainBufferCount] = { nullptr };
 	ComPtr<ID3D12Resource> DepthStencilBuffer = nullptr;
 	ComPtr<ID3D12Resource> MSAARenderTargetBuffer = nullptr;
 

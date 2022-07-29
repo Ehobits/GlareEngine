@@ -90,7 +90,7 @@ private:
 	float mGrassColor[3] = { 0.39f,0.196f,0.0f };
 	XMFLOAT3 mCameraPosition = { 0.0f,0.0f,0.0f };
 
-	vector<wstring> mLogs;
+    std::vector<std::wstring> mLogs;
 	char  FilterString[256] = {};
 	char InputBuffer[256] = {};
 	int mLogSize = 0;

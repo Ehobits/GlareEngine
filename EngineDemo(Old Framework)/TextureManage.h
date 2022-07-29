@@ -33,10 +33,10 @@ public:
 	std::unique_ptr<Texture>& GetModelTexture(std::wstring name, bool ForceSRGB = true);
 
 	void CreatePBRSRVinDescriptorHeap(
-		vector<ID3D12Resource*> TexResource,
+		std::vector<ID3D12Resource*> TexResource,
 		int* SRVIndex,
 		CD3DX12_CPU_DESCRIPTOR_HANDLE* hDescriptor,
-		wstring MaterialName);
+		std::wstring MaterialName);
 
 	int GetNumFrameResources() { return gNumFrameResources; }
 	UINT GetCbvSrvDescriptorSize() { return mCbvSrvDescriptorSize; }

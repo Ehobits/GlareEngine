@@ -1,7 +1,7 @@
 #include "ModelMesh.h"
 
 
-ModelMesh::ModelMesh(ID3D12Device* dev, ID3D12GraphicsCommandList* CommandList, vector<Vertices::PosNormalTangentTexc> vertices, vector<UINT> indices, vector<Texture> textures)
+ModelMesh::ModelMesh(ID3D12Device* dev, ID3D12GraphicsCommandList* CommandList, std::vector<Vertices::PosNormalTangentTexc> vertices, std::vector<UINT> indices, std::vector<Texture> textures)
 {
     this->vertices = vertices;
     this->indices = indices;

@@ -19,7 +19,7 @@ Direct3D12Window::~Direct3D12Window()
 {
 	if (d3dDevice != nullptr)
 		FlushCommandQueue();
-
+	 
 	for (auto& e : Shaders)
 	{
 		delete e.second;
@@ -120,7 +120,7 @@ void Direct3D12Window::OnResize()
 
 	// 释放我们将重新创建的先前资源。
 	for (int i = 0; i < SwapChainBufferCount; ++i)
-		mSwapChainBuffer[i].Reset();
+		SwapChainBuffer[i].Reset();
 
 	DepthStencilBuffer.Reset();//深度缓冲只有一个
 
@@ -139,10 +139,12 @@ void Direct3D12Window::OnResize()
 	// 为每个帧创建一个RTV。
 	for (UINT i = 0; i < SwapChainBufferCount; i++)
 	{
-		ThrowIfFailed(SwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
-		d3dDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, rtvHeapHandle);
+		ThrowIfFailed(SwapChain->GetBuffer(i, IID_PPV_ARGS(&SwapChainBuffer[i])));
+		d3dDevice->CreateRenderTargetView(SwapChainBuffer[i].Get(), nullptr, rtvHeapHandle);
 		rtvHeapHandle.Offset(1, RtvDescriptorSize);
 	}
+
+	D3D12_HEAP_PROPERTIES HeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 
 	// MSAA RTV
 	if (m4xMsaaState)
@@ -166,7 +168,7 @@ void Direct3D12Window::OnResize()
 		msaaOptimizedClearValue.Color[3] = { 0.0f };
 
 		ThrowIfFailed(d3dDevice->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			&HeapProperties,
 			D3D12_HEAP_FLAG_NONE,
 			&msaaRTDesc,
 			D3D12_RESOURCE_STATE_RESOLVE_SOURCE,
@@ -206,7 +208,7 @@ void Direct3D12Window::OnResize()
 	optClear.DepthStencil.Stencil = 0;
 	
 	ThrowIfFailed(d3dDevice->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		&HeapProperties,
 		D3D12_HEAP_FLAG_NONE,
 		&depthStencilDesc,
 		D3D12_RESOURCE_STATE_COMMON,
@@ -225,8 +227,9 @@ void Direct3D12Window::OnResize()
 	d3dDevice->CreateDepthStencilView(DepthStencilBuffer.Get(), &dsvDesc, dsvHandle);
 
 	// 将资源从其初始状态转换为用作深度缓冲区。
-	CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(DepthStencilBuffer.Get(),
-		D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE));
+	D3D12_RESOURCE_BARRIER Barriers = CD3DX12_RESOURCE_BARRIER::Transition(DepthStencilBuffer.Get(),
+		D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	CommandList->ResourceBarrier(1, &Barriers);
 
 	// Execute the resize commands.
 	ThrowIfFailed(CommandList->Close());
@@ -377,8 +380,9 @@ void Direct3D12Window::Render()
 		CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(DSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 		
 		// Indicate a state transition on the resource usage.
-		CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(),
-			D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+		D3D12_RESOURCE_BARRIER Barrier = CD3DX12_RESOURCE_BARRIER::Transition(SwapChainBuffer[mCurrBackBuffer].Get(),
+			D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		CommandList->ResourceBarrier(1, &Barrier);
 		// Clear the back buffer and depth buffer.
 		CommandList->ClearRenderTargetView(rtvHandle, Colors::LightSteelBlue, 0, nullptr);
 		CommandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
@@ -464,24 +468,24 @@ void Direct3D12Window::Render()
 				D3D12_RESOURCE_STATE_RENDER_TARGET,
 				D3D12_RESOURCE_STATE_RESOLVE_SOURCE),
 			CD3DX12_RESOURCE_BARRIER::Transition(
-				mSwapChainBuffer[mCurrBackBuffer].Get(),
+				SwapChainBuffer[mCurrBackBuffer].Get(),
 				D3D12_RESOURCE_STATE_RENDER_TARGET,
 				D3D12_RESOURCE_STATE_RESOLVE_SOURCE)
 		};
 
 		CommandList->ResourceBarrier(2, Barriers);
-		CommandList->ResolveSubresource(mSwapChainBuffer[mCurrBackBuffer].Get(), 0, MSAARenderTargetBuffer.Get(), 0, BackBufferFormat);
+		CommandList->ResolveSubresource(SwapChainBuffer[mCurrBackBuffer].Get(), 0, MSAARenderTargetBuffer.Get(), 0, BackBufferFormat);
 	}
 	else
 	{
-		D3D12_RESOURCE_BARRIER Barriers = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(),
+		D3D12_RESOURCE_BARRIER Barriers = CD3DX12_RESOURCE_BARRIER::Transition(SwapChainBuffer[mCurrBackBuffer].Get(),
 			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_RESOLVE_SOURCE);
 
 		CommandList->ResourceBarrier(1, &Barriers);
 	}
 
 	// 指示资源使用的状态转换。
-	D3D12_RESOURCE_BARRIER Barriers = CD3DX12_RESOURCE_BARRIER::Transition(mSwapChainBuffer[mCurrBackBuffer].Get(),
+	D3D12_RESOURCE_BARRIER Barriers = CD3DX12_RESOURCE_BARRIER::Transition(SwapChainBuffer[mCurrBackBuffer].Get(),
 		D3D12_RESOURCE_STATE_RESOLVE_SOURCE, D3D12_RESOURCE_STATE_PRESENT);
 	CommandList->ResourceBarrier(1, &Barriers);
 
@@ -670,10 +674,10 @@ void Direct3D12Window::CalculateFrameStats()
 		float fps = (float)frameCnt; // fps = frameCnt / 1
 		float mspf = 1000.0f / fps;
 
-		wstring fpsStr = to_wstring(fps);
-		wstring mspfStr = to_wstring(mspf);
+		std::wstring fpsStr = std::to_wstring(fps);
+		std::wstring mspfStr = std::to_wstring(mspf);
 
-		wstring Text =
+		std::wstring Text =
 			L"    FPS: " + fpsStr +
 			L"   MSPF: " + mspfStr;
 
@@ -690,6 +694,12 @@ void Direct3D12Window::OnKeyDown(UINT8 key)
 	float CameraModeSpeed = EngineUI.GetCameraModeSpeed();
 	float x = 0.0f, y = 0.0f, z = 0.0f;
 
+	// 控制输入
+	{
+	}
+	// 命令输入
+	{
+	}
 	// 相机部分 
 	{
 		if (GetAsyncKeyState(VK_LEFT) & 0x8000)
@@ -701,12 +711,6 @@ void Direct3D12Window::OnKeyDown(UINT8 key)
 		if (GetAsyncKeyState(VK_DOWN) & 0x8000)
 			z = -CameraModeSpeed / mTimer.TotalTime();
 		if (key == VK_SPACE);
-	}
-	// 控制输入
-	{
-	}
-	// 命令输入
-	{
 	}
 
 	Camera.Move(x, y, z);
@@ -895,7 +899,7 @@ void Direct3D12Window::UpdateInstanceCBs()
 {
 	XMMATRIX View = Camera.GetView();
 	XMVECTOR Determinant = XMMatrixDeterminant(View);
-	XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(View), View);
+	XMMATRIX InvView = XMMatrixInverse(&Determinant, View);
 
 
 	for (int index = 0; index < mRitemLayer[(int)RenderLayer::InstanceSimpleItems].size(); ++index)
@@ -904,7 +908,7 @@ void Direct3D12Window::UpdateInstanceCBs()
 		const auto& ReflectioninstanceData = mReflectionWaterLayer[(int)RenderLayer::InstanceSimpleItems][index]->Instances;
 		int visibleInstanceCount = 0;
 
-		std::vector<string> ModelTextureNames = modelLoder->GetModelTextureNames("Blue_Tree_02a");
+		std::vector<std::wstring> ModelTextureNames = modelLoder->GetModelTextureNames(L"Blue_Tree_02a");
 
 		for (int matNum = 0; matNum < ModelTextureNames.size(); ++matNum)
 		{
@@ -913,15 +917,16 @@ void Direct3D12Window::UpdateInstanceCBs()
 			auto ReflectioncurrInstanceBuffer = CurrFrameResource->ReflectionInstanceSimpleObjectCB[matNum].get();
 			for (UINT i = 0; i < (UINT)instanceData.size(); ++i)
 			{
-				XMMATRIX world = XMLoadFloat4x4(&instanceData[i].World);
+				XMMATRIX World = XMLoadFloat4x4(&instanceData[i].World);
 				XMMATRIX ReflectionWorld = XMLoadFloat4x4(&ReflectioninstanceData[i].World);
 
 				XMMATRIX texTransform = XMLoadFloat4x4(&instanceData[i].TexTransform);
 
-				XMMATRIX invWorld = XMMatrixInverse(&XMMatrixDeterminant(world), world);
+				Determinant = XMMatrixDeterminant(World);
+				XMMATRIX InvWorld = XMMatrixInverse(&Determinant, World);
 
 				// 视图空间转换到局部空间
-				XMMATRIX viewToLocal = XMMatrixMultiply(invView, invWorld);
+				XMMATRIX viewToLocal = XMMatrixMultiply(InvView, InvWorld);
 
 				// 将摄像机视锥从视图空间转换为对象的局部空间。
 				BoundingFrustum localSpaceFrustum;
@@ -931,7 +936,7 @@ void Direct3D12Window::UpdateInstanceCBs()
 				if ((localSpaceFrustum.Contains(mRitemLayer[(int)RenderLayer::InstanceSimpleItems][index]->Bounds) != DirectX::DISJOINT) || (mFrustumCullingEnabled == false))
 				{
 					InstanceConstants data;
-					XMStoreFloat4x4(&data.World, XMMatrixTranspose(world));
+					XMStoreFloat4x4(&data.World, XMMatrixTranspose(World));
 					XMStoreFloat4x4(&data.TexTransform, XMMatrixTranspose(texTransform));
 
 					data.MaterialIndex = Materials::GetMaterialInstance()->GetMaterial(std::wstring(ModelTextureNames[matNum].begin(), ModelTextureNames[matNum].end()))->MatCBIndex;
@@ -985,21 +990,28 @@ void Direct3D12Window::UpdateMaterialCBs()
 
 void Direct3D12Window::UpdateMainPassCB()
 {
-	XMMATRIX view = XMLoadFloat4x4(&Camera.GetView4x4f());
-	XMMATRIX proj = XMLoadFloat4x4(&Camera.GetProj4x4f());
+	XMFLOAT4X4 View4x4f = Camera.GetView4x4f();
+	XMMATRIX View = XMLoadFloat4x4(&View4x4f);
+	XMFLOAT4X4 Proj4x4f = Camera.GetProj4x4f();
+	XMMATRIX Proj = XMLoadFloat4x4(&Proj4x4f);
 
-	XMMATRIX viewProj = XMMatrixMultiply(view, proj);
-	XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(view), view);
-	XMMATRIX invProj = XMMatrixInverse(&XMMatrixDeterminant(proj), proj);
-	XMMATRIX invViewProj = XMMatrixInverse(&XMMatrixDeterminant(viewProj), viewProj);
+	XMVECTOR Determinant;
+	XMMATRIX ViewProj = XMMatrixMultiply(View, Proj);
+	Determinant = XMMatrixDeterminant(View);
+	XMMATRIX InvView = XMMatrixInverse(&Determinant, View);
+	Determinant = XMMatrixDeterminant(Proj);
+	XMMATRIX InvProj = XMMatrixInverse(&Determinant, Proj);
+	Determinant = XMMatrixDeterminant(ViewProj);
+	XMMATRIX InvViewProj = XMMatrixInverse(&Determinant, ViewProj);
 
-	XMStoreFloat4x4(&mMainPassCB.View, XMMatrixTranspose(view));
-	XMStoreFloat4x4(&mMainPassCB.InvView, XMMatrixTranspose(invView));
-	XMStoreFloat4x4(&mMainPassCB.Proj, XMMatrixTranspose(proj));
-	XMStoreFloat4x4(&mMainPassCB.InvProj, XMMatrixTranspose(invProj));
-	XMStoreFloat4x4(&mMainPassCB.ViewProj, XMMatrixTranspose(viewProj));
-	XMStoreFloat4x4(&mMainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
-	XMStoreFloat4x4(&mMainPassCB.ShadowTransform, XMMatrixTranspose(XMLoadFloat4x4(&shadowMap->mShadowTransform)));
+	XMMATRIX Float4x4ShadowTransform = XMLoadFloat4x4(&shadowMap->mShadowTransform);
+	XMStoreFloat4x4(&mMainPassCB.View, XMMatrixTranspose(View));
+	XMStoreFloat4x4(&mMainPassCB.InvView, XMMatrixTranspose(InvView));
+	XMStoreFloat4x4(&mMainPassCB.Proj, XMMatrixTranspose(Proj));
+	XMStoreFloat4x4(&mMainPassCB.InvProj, XMMatrixTranspose(InvProj));
+	XMStoreFloat4x4(&mMainPassCB.ViewProj, XMMatrixTranspose(ViewProj));
+	XMStoreFloat4x4(&mMainPassCB.InvViewProj, XMMatrixTranspose(InvViewProj));
+	XMStoreFloat4x4(&mMainPassCB.ShadowTransform, XMMatrixTranspose(Float4x4ShadowTransform));
 
 	mMainPassCB.EyePosW = Camera.GetPosition3f();
 	mMainPassCB.RenderTargetSize = XMFLOAT2((float)i_Width, (float)i_Height);
@@ -1731,7 +1743,7 @@ void Direct3D12Window::BuildFrameResources()
 	for (int i = 0; i < gNumFrameResources; ++i)
 	{
 		FrameResources.push_back(std::make_unique<FrameResource>(d3dDevice.Get(),
-			2, (UINT)modelLoder->GetModelMesh("Blue_Tree_02a").size(), 1, (UINT)mAllRitems.size(), (UINT)Materials::GetMaterialSize(), mWaves->VertexCount()));
+			2, (UINT)modelLoder->GetModelMesh(L"Blue_Tree_02a").size(), 1, (UINT)mAllRitems.size(), (UINT)Materials::GetMaterialSize(), mWaves->VertexCount()));
 	}
 }
 
@@ -1910,7 +1922,7 @@ void Direct3D12Window::BuildModelGeoInstanceItems()
 	lbox.Extents = XMFLOAT3(200.0f, 200.0f, 200.0f);
 
 	RenderItem InstanceModelRitem = {};
-	for (auto& e : modelLoder->GetModelMesh("Blue_Tree_02a"))
+	for (auto& e : modelLoder->GetModelMesh(L"Blue_Tree_02a"))
 	{
 		InstanceModelRitem.Geo.push_back(&e.mMeshGeo);
 		InstanceModelRitem.IndexCount.push_back(e.mMeshGeo.DrawArgs[L"Model Mesh"].IndexCount);
@@ -1945,11 +1957,12 @@ void Direct3D12Window::BuildModelGeoInstanceItems()
 		{
 			int index = i * n + j;
 			// Position instanced along a 3D grid.
-			XMStoreFloat4x4(&InstanceModelRitem.Instances[index].World, /*XMMatrixRotationX(MathHelper::Pi/2)**/XMMatrixRotationY(MathHelper::RandF() * MathHelper::Pi) * XMLoadFloat4x4(&XMFLOAT4X4(
+			XMFLOAT4X4 M(
 				0.1f, 0.0f, 0.0f, 0.0f,
 				0.0f, 0.1f, 0.0f, 0.0f,
 				0.0f, 0.0f, 0.1f, 0.0f,
-				x + j * dx, mHeightMapTerrain->GetHeight(x + j * dx, y + i * dy), y + i * dy, 1.0f)));
+				x + j * dx, mHeightMapTerrain->GetHeight(x + j * dx, y + i * dy), y + i * dy, 1.0f);
+			XMStoreFloat4x4(&InstanceModelRitem.Instances[index].World, /*XMMatrixRotationX(MathHelper::Pi/2)**/XMMatrixRotationY(MathHelper::RandF() * MathHelper::Pi) * XMLoadFloat4x4(&M));
 
 			InstanceModelRitem.Instances[index].TexTransform = MathHelper::Identity4x4();
 		}
@@ -2005,18 +2018,21 @@ void Direct3D12Window::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const
 
 		for (int MeshNum = 0; MeshNum < ri->Geo.size(); ++MeshNum)
 		{
+			D3D12_VERTEX_BUFFER_VIEW Views;
 			if (ri->Geo.size() > 1)//test
 			{
 				D3D12_GPU_VIRTUAL_ADDRESS skinnedCBAddress = skinnedCB->GetGPUVirtualAddress();
 				cmdList->SetGraphicsRootConstantBufferView(2, skinnedCBAddress);
 				//const D3D12_VERTEX_BUFFER_VIEW* pViews[] = { &ri->Geo[MeshNum]->VertexBufferView(),&mModelLoder->mAnimations["TraumaGuard"]["ActiveIdleLoop"].mBoneMeshs[MeshNum].mBoneGeo.VertexBufferView() };
-				cmdList->IASetVertexBuffers(0, 1, &ri->Geo[MeshNum]->VertexBufferView());
-				cmdList->IASetVertexBuffers(1, 1, &modelLoder->mAnimations["TraumaGuard"]["ActiveIdleLoop"].mBoneMeshs[MeshNum].mBoneGeo.VertexBufferView());
+				Views = ri->Geo[MeshNum]->VertexBufferView();
+				cmdList->IASetVertexBuffers(0, 1, &Views);
+				Views = modelLoder->mAnimations[L"TraumaGuard"][L"ActiveIdleLoop"].mBoneMeshs[MeshNum].mBoneGeo.VertexBufferView();
+				cmdList->IASetVertexBuffers(1, 1, &Views);
 			}
 			else
 			{
-				cmdList->IASetVertexBuffers(0, 1, &ri->Geo[MeshNum]->VertexBufferView());
-
+				Views = ri->Geo[MeshNum]->VertexBufferView();
+				cmdList->IASetVertexBuffers(0, 1, &Views);
 			}
 
 			cmdList->IASetPrimitiveTopology(ri->PrimitiveType);
@@ -2039,7 +2055,8 @@ void Direct3D12Window::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const
 
 			if (IsIndexInstanceDraw)
 			{
-				cmdList->IASetIndexBuffer(&ri->Geo[MeshNum]->IndexBufferView());
+				D3D12_INDEX_BUFFER_VIEW View = ri->Geo[MeshNum]->IndexBufferView();
+				cmdList->IASetIndexBuffer(&View);
 				cmdList->DrawIndexedInstanced(ri->IndexCount[MeshNum], ri->InstanceCount, ri->StartIndexLocation[MeshNum], ri->BaseVertexLocation[MeshNum], 0);
 			}
 			else
@@ -2055,20 +2072,6 @@ float Direct3D12Window::GetHillsHeight(float x, float z)const
 	return 0.3f * (z * sinf(0.1f * x) + x * cosf(0.1f * z));
 }
 
-XMFLOAT3 Direct3D12Window::GetHillsNormal(float x, float z)const
-{
-	// n = (-df/dx, 1, -df/dz)
-	XMFLOAT3 n(
-		-0.03f * z * cosf(0.1f * x) - 0.3f * cosf(0.1f * z),
-		1.0f,
-		-0.3f * sinf(0.1f * x) + 0.03f * x * sinf(0.1f * z));
-
-	XMVECTOR unitNormal = XMVector3Normalize(XMLoadFloat3(&n));
-	XMStoreFloat3(&n, unitNormal);
-
-	return n;
-}
-
 void Direct3D12Window::DrawShockWaveWater()
 {
 	DrawWaterReflectionMap();
@@ -2077,8 +2080,9 @@ void Direct3D12Window::DrawShockWaveWater()
 
 
 	CommandList->SetPipelineState(PSOs.get()->GetPSO(PSOName::ShockWaveWater).Get());
-	CommandList->OMSetRenderTargets(1, &MSAARTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart()
-		, false, &DSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	D3D12_CPU_DESCRIPTOR_HANDLE RenderTargetDescriptors = MSAARTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilDescriptor = DSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	CommandList->OMSetRenderTargets(1, &RenderTargetDescriptors, false, &DepthStencilDescriptor);
 	D3D12_RESOURCE_BARRIER barriers[1] =
 	{
 		CD3DX12_RESOURCE_BARRIER::Transition(
@@ -2344,12 +2348,12 @@ std::array<const CD3DX12_STATIC_SAMPLER_DESC, 7> Direct3D12Window::GetStaticSamp
 
 void Direct3D12Window::LoadModel()
 {
-	modelLoder->LoadModel("BlueTree/Blue_Tree_03a.fbx");
-	modelLoder->LoadModel("BlueTree/Blue_Tree_03b.fbx");
-	modelLoder->LoadModel("BlueTree/Blue_Tree_03c.fbx");
-	modelLoder->LoadModel("BlueTree/Blue_Tree_03d.fbx");
-	modelLoder->LoadModel("BlueTree/Blue_Tree_02a.fbx");
-	modelLoder->LoadModel("TraumaGuard/TraumaGuard.fbx");
+	modelLoder->LoadModel(L"BlueTree/Blue_Tree_03a.fbx");
+	modelLoder->LoadModel(L"BlueTree/Blue_Tree_03b.fbx");
+	modelLoder->LoadModel(L"BlueTree/Blue_Tree_03c.fbx");
+	modelLoder->LoadModel(L"BlueTree/Blue_Tree_03d.fbx");
+	modelLoder->LoadModel(L"BlueTree/Blue_Tree_02a.fbx");
+	modelLoder->LoadModel(L"TraumaGuard/TraumaGuard.fbx");
 
 	//AnimationPlayback["TraumaGuard@ActiveIdleLoop"].OnInitialize();
 	//mModelLoder->LoadAnimation("TraumaGuard/TraumaGuard@ActiveIdleLoop.fbx");
@@ -2358,23 +2362,28 @@ void Direct3D12Window::LoadModel()
 
 void Direct3D12Window::UpdateShadowPassCB()
 {
-	XMMATRIX view = XMLoadFloat4x4(&shadowMap->mLightView);
-	XMMATRIX proj = XMLoadFloat4x4(&shadowMap->mLightProj);
+	XMMATRIX View = XMLoadFloat4x4(&shadowMap->mLightView);
+	XMMATRIX Proj = XMLoadFloat4x4(&shadowMap->mLightProj);
 
-	XMMATRIX viewProj = XMMatrixMultiply(view, proj);
-	XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(view), view);
-	XMMATRIX invProj = XMMatrixInverse(&XMMatrixDeterminant(proj), proj);
-	XMMATRIX invViewProj = XMMatrixInverse(&XMMatrixDeterminant(viewProj), viewProj);
+	XMVECTOR Determinant;
+	XMMATRIX ViewProj = XMMatrixMultiply(View, Proj);
+	Determinant = XMMatrixDeterminant(View);
+	XMMATRIX InvView = XMMatrixInverse(&Determinant, View);
+	Determinant = XMMatrixDeterminant(Proj);
+	XMMATRIX InvProj = XMMatrixInverse(&Determinant, Proj);
+	Determinant = XMMatrixDeterminant(ViewProj);
+	XMMATRIX InvViewProj = XMMatrixInverse(&Determinant, ViewProj);
+
 
 	UINT w = shadowMap->Width();
 	UINT h = shadowMap->Height();
 
-	XMStoreFloat4x4(&mShadowPassCB.View, XMMatrixTranspose(view));
-	XMStoreFloat4x4(&mShadowPassCB.InvView, XMMatrixTranspose(invView));
-	XMStoreFloat4x4(&mShadowPassCB.Proj, XMMatrixTranspose(proj));
-	XMStoreFloat4x4(&mShadowPassCB.InvProj, XMMatrixTranspose(invProj));
-	XMStoreFloat4x4(&mShadowPassCB.ViewProj, XMMatrixTranspose(viewProj));
-	XMStoreFloat4x4(&mShadowPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
+	XMStoreFloat4x4(&mShadowPassCB.View, XMMatrixTranspose(View));
+	XMStoreFloat4x4(&mShadowPassCB.InvView, XMMatrixTranspose(InvView));
+	XMStoreFloat4x4(&mShadowPassCB.Proj, XMMatrixTranspose(Proj));
+	XMStoreFloat4x4(&mShadowPassCB.InvProj, XMMatrixTranspose(InvProj));
+	XMStoreFloat4x4(&mShadowPassCB.ViewProj, XMMatrixTranspose(ViewProj));
+	XMStoreFloat4x4(&mShadowPassCB.InvViewProj, XMMatrixTranspose(InvViewProj));
 	mShadowPassCB.EyePosW = shadowMap->mLightPosW;
 	mShadowPassCB.RenderTargetSize = XMFLOAT2((float)w, (float)h);
 	mShadowPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / w, 1.0f / h);
@@ -2436,14 +2445,14 @@ void Direct3D12Window::UpdateAnimation()
 
 	/*if (time >= 3.0f)
 	{*/
-	modelLoder->mAnimations["TraumaGuard"]["ActiveIdleLoop"].UpadateBoneTransform(time_in_sec, transforms);
-	//mModelLoder->mAnimations["TraumaGuard"]["ActiveIdleLoop"].Calculate(time_in_sec);
+	modelLoder->mAnimations[L"TraumaGuard"][L"ActiveIdleLoop"].UpadateBoneTransform(time_in_sec, transforms);
+	//mModelLoder->mAnimations[L"TraumaGuard"][L"ActiveIdleLoop"].Calculate(time_in_sec);
 	//time -= 3.0f;
-	//mModelLoder->mAnimations["TraumaGuard"]["ActiveIdleLoop"].GetBoneMatrices(mModelLoder->mAnimations["TraumaGuard"]["ActiveIdleLoop"].pAnimeScene->mRootNode,x);
+	//mModelLoder->mAnimations[L"TraumaGuard"][L"ActiveIdleLoop"].GetBoneMatrices(mModelLoder->mAnimations["TraumaGuard"]["ActiveIdleLoop"].pAnimeScene->mRootNode,x);
 	/*int i = 0;
-	for (auto e : mModelLoder->mAnimations["TraumaGuard"]["ActiveIdleLoop"].mTransforms)
+	for (auto e : mModelLoder->mAnimations[L"TraumaGuard"][L"ActiveIdleLoop"].mTransforms)
 	{
-		transforms[i++]=(mModelLoder->mAnimations["TraumaGuard"]["ActiveIdleLoop"].AiToXM(e));
+		transforms[i++]=(mModelLoder->mAnimations[L"TraumaGuard"][L"ActiveIdleLoop"].AiToXM(e));
 	}*/
 
 	SkinnedConstants skinnedConstants;
@@ -2620,8 +2629,10 @@ void Direct3D12Window::CreateRtvAndDsvDescriptorHeaps()
 
 void Direct3D12Window::DrawSceneToShadowMap()
 {
-	CommandList->RSSetViewports(1, &shadowMap->Viewport());
-	CommandList->RSSetScissorRects(1, &shadowMap->ScissorRect());
+	D3D12_VIEWPORT Viewports = shadowMap->Viewport();
+	CommandList->RSSetViewports(1, &Viewports);
+	D3D12_RECT Rects = shadowMap->ScissorRect();
+	CommandList->RSSetScissorRects(1, &Rects);
 
 	UINT passCBByteSize = EngineUtility::CalcConstantBufferByteSize(sizeof(PassConstants));
 
@@ -2629,7 +2640,8 @@ void Direct3D12Window::DrawSceneToShadowMap()
 	// Set null render target because we are only going to draw to
 	// depth buffer.  Setting a null render target will disable color writes.
 	// Note the active PSO also must specify a render target count of 0.
-	CommandList->OMSetRenderTargets(0, nullptr, false, &shadowMap->Dsv());
+	D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilDescriptor = shadowMap->Dsv();
+	CommandList->OMSetRenderTargets(0, nullptr, false, &DepthStencilDescriptor);
 
 	// Clear the back buffer and depth buffer.
 	CommandList->ClearDepthStencilView(shadowMap->Dsv(),

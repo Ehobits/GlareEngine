@@ -11,6 +11,7 @@ class TextureManage;
 #define CLIENT_HEIGHT 0.75f
 
 extern bool gFullSreenMode;
+
 class EngineGUI
 {
 public:
@@ -89,7 +90,7 @@ private:
 	XMFLOAT3 mCameraPosition = { 0.0f,0.0f,0.0f };
 
 	std::wstring FPSText = L"";
-	vector<wstring> mLogs;
+	std::vector<std::wstring> mLogs;
 	char  FilterString[256] = {};
 	char InputBuffer[256] = {};
 	int mLogSize = 0;
