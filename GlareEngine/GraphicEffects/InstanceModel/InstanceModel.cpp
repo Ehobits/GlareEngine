@@ -60,7 +60,6 @@ void InstanceModel::DrawShadow(GraphicsContext& Context, GraphicsPSO* SpecificSh
 		UINT IndexCount = ((MeshGeometry)SubModelMeshGeo).DrawArgs[SubMeshName].IndexCount;
 		Context.DrawIndexedInstanced(IndexCount, (UINT)InstanceData.size(), 0, 0, 0);
 	}
-
 }
 
 void InstanceModel::BuildPSO(const PSOCommonProperty CommonProperty)
